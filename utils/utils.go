@@ -7,8 +7,8 @@ import (
 )
 
 // Build json message
-func Message(success bool, status int, message string) (map[string] interface{}) {
-	return map[string]interface{} {"success": success, "status": status, "message": message}
+func Message(success bool, status int, message string, errors []string) (map[string] interface{}) {
+	return map[string]interface{} {"success": success, "status": status, "message": message, "errors": errors}
 }
 
 // Return json response
@@ -28,6 +28,8 @@ func SendPostRequest(url string, data map[string]interface{}) (response *http.Re
 	client := &http.Client{}
 
 	response, err = client.Do(request)
+
+	defer response.Body.Close()
 
 	return
 }
