@@ -3,15 +3,27 @@ package controllers
 import (
 	"os"
 	"log"
-	"fmt"
 	"github.com/joho/godotenv"
 	"html/template"
 	"path/filepath"
+	"net/url"
 )
 
 var viewPath = "views"
 var templates *template.Template
+var restURL *url.URL
 var appName string
+
+func init() {
+	err := godotenv.Load() //Load .env file
+	if err != nil {
+		log.Print("Error loading .env file", err)
+	}
+
+	templates, _ = GetTemplates()
+	appName = os.Getenv("app_name")
+	restURL, _ = url.ParseRequestURI("http://localhost:8080")
+}
 
 func GetTemplates() (templates *template.Template, err error) {
 	var allFiles []string
@@ -25,7 +37,7 @@ func GetTemplates() (templates *template.Template, err error) {
 		return nil
 	})
 
-	if err != nil {
+	if err != nil {		
 		log.Print("Error walking the file path", err)
 	}
 
@@ -36,14 +48,4 @@ func GetTemplates() (templates *template.Template, err error) {
 	}
 
     return
-}
-
-func init() {
-	err := godotenv.Load() //Load .env file
-	if err != nil {
-		fmt.Println("Error loading .env file", err)
-	}
-
-	templates, _ = GetTemplates()
-	appName = os.Getenv("app_name")
 }

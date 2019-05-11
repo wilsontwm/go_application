@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	"net/http"
 	"app/controllers"
+	"app/api"
 )
 
 func main() {
@@ -20,11 +21,14 @@ func main() {
 	// Routes
 	// Pages routes
 	router.HandleFunc("/", controllers.HelloPage).Methods("GET")
+	// Authenticate routes
 	router.HandleFunc("/login", controllers.LoginPage).Methods("GET")
 	router.HandleFunc("/signup", controllers.SignupPage).Methods("GET")
-
+	router.HandleFunc("/signup", controllers.SignupSubmit).Methods("POST")
+    
 	// REST routes
-	
+	router.HandleFunc("/api/signup", api.Signup).Methods("POST")
+
 	// Asset files
 	router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 
