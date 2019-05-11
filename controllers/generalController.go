@@ -51,10 +51,17 @@ var SignupSubmit = func(w http.ResponseWriter, r *http.Request) {
 	restURL.Path = "/api/signup"
 	urlStr := restURL.String()
 
-	// Get the input data
+	// Get the input data from the form
+	r.ParseForm()
+	name := r.Form.Get("name")
+	email := r.Form.Get("email")
+	password := r.Form.Get("password")
+	
+	// Set the input data
 	jsonData := map[string]interface{}{
-		"email": "hello@gmail.com",
-		"password": "password",
+		"email": email,
+		"password": password,
+		"name": name,
 	}
 
 	response, err := util.SendPostRequest(urlStr, jsonData)
