@@ -1,0 +1,17 @@
+{{define "flash_html"}}
+<div class="flash-container">
+    {{with $err:=.errors}}
+    {{range $err}}
+    <div class="flash-message" data-type="error" data-timeout="5000">{{.}}</div>
+    {{end}}
+    {{end}}
+
+    {{if .success}}
+    <div class="flash-message" data-type="success" data-timeout="5000">{{.success}}</div>
+    {{end}}
+
+    {{if .warning}}
+    <div class="flash-message" data-type="warning" data-timeout="5000">{{.warning}}</div>
+    {{end}}
+  </div>
+{{end}}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/gorilla/mux"
-	"fmt"
 	"log"
 	"os"
 	"github.com/joho/godotenv"
@@ -14,7 +13,7 @@ import (
 func main() {
 	err := godotenv.Load() //Load .env file
 	if err != nil {
-		fmt.Println("Error loading .env file", err)
+		log.Println("Error loading .env file", err)
 	}
 
 	router := mux.NewRouter()
@@ -37,6 +36,6 @@ func main() {
 		port = "8000"
 	}
 
-	fmt.Println("Server started and running at port", port)
+	log.Println("Server started and running at port", port)
 	log.Fatal(http.ListenAndServe(":" + port, router))
 }

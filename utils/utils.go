@@ -29,7 +29,16 @@ func SendPostRequest(url string, data map[string]interface{}) (response *http.Re
 
 	response, err = client.Do(request)
 
-	defer response.Body.Close()
+
+	return
+}
+
+// Get the success / errors flash message from the cookie
+func GetFlashMessages(w http.ResponseWriter, r *http.Request) (success string, errors []string) {
+	errorsByte, _ := GetFlash(w, r, "errors")
+	successByte, _ := GetFlash(w, r, "success")
+	json.Unmarshal([]byte(string(errorsByte)), &errors)
+	success = string(successByte)
 
 	return
 }

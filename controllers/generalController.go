@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"net/http"
-	"fmt"
 	"io/ioutil"
+	"encoding/json"
 	util "app/utils"
 )
 
@@ -34,9 +34,13 @@ var LoginPage = func(w http.ResponseWriter, r *http.Request) {
 }
 
 var SignupPage = func(w http.ResponseWriter, r *http.Request) {
+	success, errors := util.GetFlashMessages(w, r)
+
 	data := map[string]interface{}{
 		"title": "Signup",
 		"appName": appName,
+		"errors": errors,
+		"success": success,
 	}
 
 	err := templates.ExecuteTemplate(w, "signup_html", data)
@@ -47,6 +51,8 @@ var SignupPage = func(w http.ResponseWriter, r *http.Request) {
 }
 
 var SignupSubmit = func(w http.ResponseWriter, r *http.Request) {
+	var resp map[string]interface{}
+
 	// Set the URL path
 	restURL.Path = "/api/signup"
 	urlStr := restURL.String()
@@ -56,7 +62,21 @@ var SignupSubmit = func(w http.ResponseWriter, r *http.Request) {
 	name := r.Form.Get("name")
 	email := r.Form.Get("email")
 	password := r.Form.Get("password")
-	
+	retype_password := r.Form.Get("retype_password")
+
+	// Check if the retype password matches
+	if(password != retype_password) {
+		var errors []string
+		errors = append(errors, "Retype password does not match.")
+		errorJson, _ := json.Marshal(errors)
+		errorFlash := []byte(errorJson)
+		util.SetFlash(w, "errors", errorFlash)
+		// Redirect back to the previous page
+		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusFound)
+
+		return
+	}
+
 	// Set the input data
 	jsonData := map[string]interface{}{
 		"email": email,
@@ -69,6 +89,13 @@ var SignupSubmit = func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
 		data, _ := ioutil.ReadAll(response.Body)
-		fmt.Println(string(data))
+		
+		// Parse it to json data
+		json.Unmarshal([]byte(string(data)), &resp)
+
+		util.SetErrorSuccessFlash(w, resp)
+
+		// Redirect back to the previous page
+		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusFound)
 	}
 }

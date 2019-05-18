@@ -45,7 +45,7 @@ var Signup = func(w http.ResponseWriter, r *http.Request) {
 	// Remove the password to be outputted
 	input.Password = ""
 
-	resp := util.Message(true, http.StatusOK, "Success", errors)
+	resp := util.Message(true, http.StatusOK, "You have successfully signed up.", errors)
 	resp["data"] = input
 	util.Respond(w, resp)
 }
