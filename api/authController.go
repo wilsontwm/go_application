@@ -32,10 +32,7 @@ var Signup = func(w http.ResponseWriter, r *http.Request) {
 	validate = validator.New()
 	err = validate.Struct(input)
 	if err != nil {
-		for _, errz := range err.(validator.ValidationErrors) {
-			// Build the custom errors here
-			errors = append(errors, errz.Field())
-		}
+		util.GetErrorMessages(&errors, err)
 
 		resp := util.Message(false, http.StatusUnprocessableEntity, "Validation error", errors)
 		util.Respond(w, resp)

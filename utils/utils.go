@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"bytes"
 	"encoding/json"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 // Build json message
@@ -29,7 +30,6 @@ func SendPostRequest(url string, data map[string]interface{}) (response *http.Re
 
 	response, err = client.Do(request)
 
-
 	return
 }
 
@@ -39,6 +39,22 @@ func GetFlashMessages(w http.ResponseWriter, r *http.Request) (success string, e
 	successByte, _ := GetFlash(w, r, "success")
 	json.Unmarshal([]byte(string(errorsByte)), &errors)
 	success = string(successByte)
+
+	return
+}
+
+// Build the error message
+func GetErrorMessages(errors *[]string, err error) {
+	for _, errz := range err.(validator.ValidationErrors) {
+		// Build the custom errors here
+		switch tag := errz.ActualTag(); tag {
+			case "required":
+				*errors = append(*errors, errz.StructField() + " is required.")
+			case "email":
+				*errors = append(*errors, errz.StructField() + " is an invalid email address.")
+			default:
+		}		
+	}
 
 	return
 }

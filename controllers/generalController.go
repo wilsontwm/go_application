@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"strings"
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
@@ -59,10 +60,10 @@ var SignupSubmit = func(w http.ResponseWriter, r *http.Request) {
 
 	// Get the input data from the form
 	r.ParseForm()
-	name := r.Form.Get("name")
-	email := r.Form.Get("email")
-	password := r.Form.Get("password")
-	retype_password := r.Form.Get("retype_password")
+	name := strings.TrimSpace(r.Form.Get("name"))
+	email := strings.TrimSpace(r.Form.Get("email"))
+	password :=strings.TrimSpace( r.Form.Get("password"))
+	retype_password := strings.TrimSpace(r.Form.Get("retype_password"))
 
 	// Check if the retype password matches
 	if(password != retype_password) {
