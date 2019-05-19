@@ -9,12 +9,20 @@ import (
 
 // Set the error/success flash message depends on the success state of the response
 func SetErrorSuccessFlash(w http.ResponseWriter, resp map[string]interface{}) {
-	if(resp["success"].(bool)) {
+  // Set flash	
+  if(resp["success"].(bool)) {
 		successFlash := []byte(resp["message"].(string))
 		SetFlash(w, "success", successFlash)
-	} else {
-		// Set flash		
-		errors := resp["errors"].([] interface{})
+	} else {	
+    var errors []interface{}
+    
+    if(resp["errors"] != nil) {
+      errors = resp["errors"].([]interface{})
+    } else {
+      errorMsg := resp["message"].(string)
+      errors = append(errors, errorMsg)
+    }
+		
 		errorJson, _ := json.Marshal(errors)
 		errorFlash := []byte(errorJson)
 		SetFlash(w, "errors", errorFlash)

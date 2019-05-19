@@ -3,6 +3,7 @@ package utils
 import (	
 	"net/http"
 	"bytes"
+	"reflect"
 	"encoding/json"
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -52,7 +53,20 @@ func GetErrorMessages(errors *[]string, err error) {
 				*errors = append(*errors, errz.StructField() + " is required.")
 			case "email":
 				*errors = append(*errors, errz.StructField() + " is an invalid email address.")
+			case "min":
+				if (errz.Type().Kind() == reflect.String) {
+					*errors = append(*errors, errz.StructField() + " must be more than or equal to " + errz.Param() + " character(s).")
+				} else {
+					*errors = append(*errors, errz.StructField() + " must be larger than " + errz.Param() + ".")
+				}
+			case "max":
+				if (errz.Type().Kind() == reflect.String) {
+					*errors = append(*errors, errz.StructField() + " must be lesser than or equal to " + errz.Param() + " character(s).")
+				} else {
+					*errors = append(*errors, errz.StructField() + " must be smaller than " + errz.Param() + ".")
+				}
 			default:
+				*errors = append(*errors, errz.StructField() + " is invalid.")
 		}		
 	}
 
