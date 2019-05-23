@@ -62,7 +62,7 @@ var SignupSubmit = func(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	name := strings.TrimSpace(r.Form.Get("name"))
 	email := strings.TrimSpace(r.Form.Get("email"))
-	password :=strings.TrimSpace( r.Form.Get("password"))
+	password := strings.TrimSpace( r.Form.Get("password"))
 	retype_password := strings.TrimSpace(r.Form.Get("retype_password"))
 
 	// Check if the retype password matches
@@ -93,6 +93,14 @@ var SignupSubmit = func(w http.ResponseWriter, r *http.Request) {
 		
 		// Parse it to json data
 		json.Unmarshal([]byte(string(data)), &resp)
+
+		// Send activation email
+		if(resp["success"].(bool)) {
+			subject := appName + " - Activate your account"
+			receiver := email
+			r := util.NewRequest([]string{receiver}, subject)
+			r.Send("views/mail/signup.html", map[string]string{"appName": appName, "username": name})
+		}
 
 		util.SetErrorSuccessFlash(w, resp)
 
