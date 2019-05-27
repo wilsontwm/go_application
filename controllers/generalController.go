@@ -96,10 +96,73 @@ var SignupSubmit = func(w http.ResponseWriter, r *http.Request) {
 
 		// Send activation email
 		if(resp["success"].(bool)) {
+			userData := resp["data"].(map[string]interface{})
+			activationLink := appURL + "/activate/" + userData["activationCode"].(string)
+
 			subject := appName + " - Activate your account"
 			receiver := email
 			r := util.NewRequest([]string{receiver}, subject)
-			r.Send("views/mail/signup.html", map[string]string{"appName": appName, "username": name})
+			r.Send("views/mail/signup.html", map[string]string{"appName": appName, "username": name, "activationLink": activationLink})
+		}
+
+		util.SetErrorSuccessFlash(w, resp)
+
+		// Redirect back to the previous page
+		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusFound)
+	}
+}
+
+var ResendActivationPage = func(w http.ResponseWriter, r *http.Request) {
+	success, errors := util.GetFlashMessages(w, r)
+
+	data := map[string]interface{}{
+		"title": "Resend Activation",
+		"appName": appName,
+		"errors": errors,
+		"success": success,
+	}
+
+	err := templates.ExecuteTemplate(w, "resend_activation_html", data)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+var ResendActivationSubmit = func(w http.ResponseWriter, r *http.Request) {
+	var resp map[string]interface{}
+
+	// Set the URL path
+	restURL.Path = "/api/resendactivation"
+	urlStr := restURL.String()
+
+	// Get the input data from the form
+	r.ParseForm()
+	email := strings.TrimSpace(r.Form.Get("email"))
+
+	// Set the input data
+	jsonData := map[string]interface{}{
+		"email": email,
+	}
+
+	response, err := util.SendPostRequest(urlStr, jsonData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		
+		// Parse it to json data
+		json.Unmarshal([]byte(string(data)), &resp)
+		
+		// Resend activation email
+		if(resp["success"].(bool)) {
+			userData := resp["data"].(map[string]interface{})
+			activationLink := appURL + "/activate/" + userData["activationCode"].(string)
+
+			subject := appName + " - Activate your account"
+			receiver := email
+			r := util.NewRequest([]string{receiver}, subject)
+			r.Send("views/mail/signup.html", map[string]string{"appName": appName, "username": userData["name"].(string), "activationLink": activationLink})
 		}
 
 		util.SetErrorSuccessFlash(w, resp)

@@ -12,6 +12,7 @@ import (
 var viewPath = "views"
 var templates *template.Template
 var restURL *url.URL
+var appURL string
 var appName string
 
 func init() {
@@ -22,7 +23,8 @@ func init() {
 
 	templates, _ = GetTemplates()
 	appName = os.Getenv("app_name")
-	restURL, _ = url.ParseRequestURI("http://localhost:8080")
+	appURL = os.Getenv("app_url")
+	restURL, _ = url.ParseRequestURI(appURL)
 }
 
 func GetTemplates() (templates *template.Template, err error) {

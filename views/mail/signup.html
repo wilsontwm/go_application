@@ -45,7 +45,6 @@
         margin: 0 auto;
       }
       .footer{
-        text-transform: uppercase;
         text-align: center;
         height: 40px;
         font-size: 14px;
@@ -78,7 +77,7 @@
           <table bgcolor="#CCCCCC" border="0" cellspacing="0" cellpadding="0" class="buttonwrapper">
             <tr>
               <td class="button" height="45">
-                <a href="#" target="_blank">Activate</a>
+                <a href="{{ .activationLink }}" target="_blank">Activate</a>
               </td>
             </tr>
           </table>
@@ -86,7 +85,8 @@
       </tr>
       <tr class="footer">
         <td style="padding: 40px;">
-            Powered by {{ .appName }}
+            Powered by {{ .appName }} <br/>
+            <small>If the button above is not working, you can copy the following link: <a href="{{ .activationLink }}" target="_blank">{{ .activationLink }}</a></small>
         </td>
       </tr>
     </table>

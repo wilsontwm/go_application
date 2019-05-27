@@ -1,13 +1,15 @@
 package models
 
 import (
+	//"database/sql"
 	"github.com/dgrijalva/jwt-go"
 	util "app/utils"
-	//"strings"
+	"fmt"
 	"net/http"
 	"github.com/jinzhu/gorm"
-	"os"
 	"golang.org/x/crypto/bcrypt"
+	"crypto/md5"
+	"encoding/hex"
 )
 
 type Token struct {
@@ -17,14 +19,15 @@ type Token struct {
 
 type User struct {
 	gorm.Model
-	Name string `json:"name"`
-	Email string `json:"email"`
-	Password string `json:"password"`
-	Token string `json:"token";sql:"-"`
+	Name string `json:"name";gorm:"not null"`
+	Email string `json:"email";gorm:"unique;not null"`
+	Password string `json:"password";gorm:"not null"`
+	Token *string `json:"token";sql:"-"`
+	ActivationCode *string `json:"activationCode"`
 }
 
 // Validate the incoming details
-func (user *User) Validate() (map[string] interface{}, bool) {
+func (user *User) ValidateSignup() (map[string] interface{}, bool) {
 	var errors []string
 	var resp map[string] interface{}
 	
@@ -52,29 +55,51 @@ func (user *User) Create() (map[string] interface{}) {
 	var errors []string
 
 	// Validate the account first
-	if resp, ok := user.Validate(); !ok {
+	if resp, ok := user.ValidateSignup(); !ok {
 		return resp;
 	}
 
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	user.Password = string(hashedPassword)
+	user.Token = nil
 
 	GetDB().Create(user)
 
 	if user.ID <= 0 {
-		return util.Message(false, http.StatusInternalServerError, "Failed to create account, connection error.", errors)
+		resp := util.Message(false, http.StatusInternalServerError, "Failed to create account, connection error.", errors)
+		return resp;
 	}
 
-	// Create new JWT token for the newly registered account
-	tk := &Token{UserId: user.ID}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, tk)
-	tokenString, _ := token.SignedString([]byte(os.Getenv("token_password")))
-	user.Token = tokenString
+	// Store the activation code to the user
+	hash := md5.New()
+	hash.Write([]byte(fmt.Sprint(user.ID)))	
+	activationCode := hex.EncodeToString(hash.Sum(nil))
+	
+	GetDB().Model(&user).Update("ActivationCode", activationCode)
 	
 	user.Password = "" // delete the password
 
 	resp := util.Message(true, http.StatusOK, "You have successfully signed up.", errors)
 	resp["data"] = user
+
+	return resp
+}
+
+func (user *User) ResendActivation() (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+
+	// Get the user by email
+	user = GetUserByEmail(user.Email)
+
+	if user == nil {
+		resp = util.Message(false, http.StatusUnprocessableEntity, "Invalid email address.", errors)
+	} else if user.ActivationCode == nil {
+		resp = util.Message(false, http.StatusUnprocessableEntity, "The account has already been activated.", errors)
+	} else {
+		resp = util.Message(true, http.StatusOK, "The activation link has been emailed to you. Please check your inbox.", errors)		
+		resp["data"] = user
+	}
 
 	return resp
 }
@@ -110,6 +135,18 @@ func Login(email, password string) (map[string] interface{}) {
 	return response
 }
 */
+
+func GetUserByEmail(email string) *User {
+	user := &User{}
+	GetDB().Table("users").Where("email = ?", email).First(user)
+	if user.Email == "" {
+		return nil
+	}
+
+	user.Password = ""
+	return user
+}
+
 func GetUser(u uint) *User {
 	user := &User{}
 	GetDB().Table("users").Where("id = ?", u).First(user)
