@@ -18,6 +18,10 @@ type ResendActivationInput struct {
 	Email string `json:"email" validate:"required,email"`
 }
 
+type ForgetPasswordInput struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
 // use a single instance of Validate, it caches struct info
 var validate *validator.Validate
 
@@ -81,6 +85,36 @@ var ResendActivation = func(w http.ResponseWriter, r *http.Request) {
 	user := &models.User{}
 	user.Email = input.Email
 	resp := user.ResendActivation()
+	
+	util.Respond(w, resp)
+}
+
+var ForgetPassword = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	
+	input := ForgetPasswordInput{}
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		errors = append(errors, err.Error())
+		resp := util.Message(false, http.StatusInternalServerError, "Error decoding request body", errors)
+		util.Respond(w, resp)
+		return
+	}
+	
+	// Validate the input
+	validate = validator.New()
+	err = validate.Struct(input)
+	if err != nil {
+		util.GetErrorMessages(&errors, err)
+
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Validation error", errors)
+		util.Respond(w, resp)
+		return
+	}
+	
+	user := &models.User{}
+	user.Email = input.Email
+	resp := user.ForgetPassword()
 	
 	util.Respond(w, resp)
 }

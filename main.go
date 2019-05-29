@@ -26,10 +26,13 @@ func main() {
 	router.HandleFunc("/signup", controllers.SignupSubmit).Methods("POST")
 	router.HandleFunc("/resendactivation", controllers.ResendActivationPage).Methods("GET")	
 	router.HandleFunc("/resendactivation", controllers.ResendActivationSubmit).Methods("POST")
+	router.HandleFunc("/forgetpassword", controllers.ForgetPasswordPage).Methods("GET")	
+	router.HandleFunc("/forgetpassword", controllers.ForgetPasswordSubmit).Methods("POST")
     
 	// REST routes
 	router.HandleFunc("/api/signup", api.Signup).Methods("POST")
 	router.HandleFunc("/api/resendactivation", api.ResendActivation).Methods("POST")
+	router.HandleFunc("/api/forgetpassword", api.ForgetPassword).Methods("POST")
 
 	// Asset files
 	router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))

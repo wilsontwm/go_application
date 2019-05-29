@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"crypto/md5"
 	"encoding/hex"
+	"time"
 )
 
 type Token struct {
@@ -24,6 +25,7 @@ type User struct {
 	Password string `json:"password";gorm:"not null"`
 	Token *string `json:"token";sql:"-"`
 	ActivationCode *string `json:"activationCode"`
+	ResetPasswordCode *string `json:"resetPasswordCode"`
 }
 
 // Validate the incoming details
@@ -91,13 +93,39 @@ func (user *User) ResendActivation() (map[string] interface{}) {
 
 	// Get the user by email
 	user = GetUserByEmail(user.Email)
-
+	fmt.Println(user.ActivationCode, user.ActivationCode == nil)
 	if user == nil {
 		resp = util.Message(false, http.StatusUnprocessableEntity, "Invalid email address.", errors)
 	} else if user.ActivationCode == nil {
 		resp = util.Message(false, http.StatusUnprocessableEntity, "The account has already been activated.", errors)
 	} else {
 		resp = util.Message(true, http.StatusOK, "The activation link has been emailed to you. Please check your inbox.", errors)		
+		resp["data"] = user
+	}
+
+	return resp
+}
+
+func (user *User) ForgetPassword() (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+
+	// Get the user by email
+	user = GetUserByEmail(user.Email)
+
+	if user == nil {
+		resp = util.Message(false, http.StatusUnprocessableEntity, "Invalid email address.", errors)
+	} else if user.ActivationCode != nil {
+		resp = util.Message(false, http.StatusUnprocessableEntity, "The account has not been activated yet. Please activate the account first.", errors)
+	} else {
+		// Store the activation code to the user
+		hash := md5.New()
+		hash.Write([]byte(fmt.Sprint(user.ID) + time.Now().String()))	
+		resetPasswordCode := hex.EncodeToString(hash.Sum(nil))
+		
+		GetDB().Model(&user).Update("ResetPasswordCode", resetPasswordCode)
+		
+		resp = util.Message(true, http.StatusOK, "An email to reset password has been sent to you. Please check your inbox.", errors)		
 		resp["data"] = user
 	}
 
