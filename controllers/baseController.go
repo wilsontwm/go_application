@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"path/filepath"
 	"net/url"
+	"github.com/gorilla/sessions"
 )
 
 var viewPath = "views"
@@ -14,6 +15,7 @@ var templates *template.Template
 var restURL *url.URL
 var appURL string
 var appName string
+var store *sessions.CookieStore
 
 func init() {
 	err := godotenv.Load() //Load .env file
@@ -25,6 +27,7 @@ func init() {
 	appName = os.Getenv("app_name")
 	appURL = os.Getenv("app_url")
 	restURL, _ = url.ParseRequestURI(appURL)
+	store = sessions.NewCookieStore([]byte(os.Getenv("session_key")))
 }
 
 func GetTemplates() (templates *template.Template, err error) {

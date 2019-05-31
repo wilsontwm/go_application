@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	util "app/utils"
+	"github.com/gorilla/mux"
+	//"fmt"
 )
 
 var HelloPage = func(w http.ResponseWriter, r *http.Request) {
@@ -35,16 +37,17 @@ var LoginPage = func(w http.ResponseWriter, r *http.Request) {
 }
 
 var SignupPage = func(w http.ResponseWriter, r *http.Request) {
-	success, errors := util.GetFlashMessages(w, r)
-
 	data := map[string]interface{}{
 		"title": "Signup",
 		"appName": appName,
-		"errors": errors,
-		"success": success,
 	}
 
-	err := templates.ExecuteTemplate(w, "signup_html", data)
+	data, err := util.InitializePage(w, r, store, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	err = templates.ExecuteTemplate(w, "signup_html", data)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -58,6 +61,8 @@ var SignupSubmit = func(w http.ResponseWriter, r *http.Request) {
 	restURL.Path = "/api/signup"
 	urlStr := restURL.String()
 
+	session, err := util.GetSession(store, w, r)
+
 	// Get the input data from the form
 	r.ParseForm()
 	name := strings.TrimSpace(r.Form.Get("name"))
@@ -67,11 +72,9 @@ var SignupSubmit = func(w http.ResponseWriter, r *http.Request) {
 
 	// Check if the retype password matches
 	if(password != retype_password) {
-		var errors []string
-		errors = append(errors, "Retype password does not match.")
-		errorJson, _ := json.Marshal(errors)
-		errorFlash := []byte(errorJson)
-		util.SetFlash(w, "errors", errorFlash)
+		session.AddFlash("Retype password does not match.", "errors")
+		session.Save(r, w)
+		
 		// Redirect back to the previous page
 		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusFound)
 
@@ -105,7 +108,7 @@ var SignupSubmit = func(w http.ResponseWriter, r *http.Request) {
 			r.Send("views/mail/signup.html", map[string]string{"appName": appName, "username": name, "activationLink": activationLink})
 		}
 
-		util.SetErrorSuccessFlash(w, resp)
+		util.SetErrorSuccessFlash(session, w, r, resp)
 
 		// Redirect back to the previous page
 		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusFound)
@@ -113,16 +116,18 @@ var SignupSubmit = func(w http.ResponseWriter, r *http.Request) {
 }
 
 var ResendActivationPage = func(w http.ResponseWriter, r *http.Request) {
-	success, errors := util.GetFlashMessages(w, r)
-
+	
 	data := map[string]interface{}{
 		"title": "Resend Activation",
 		"appName": appName,
-		"errors": errors,
-		"success": success,
 	}
 
-	err := templates.ExecuteTemplate(w, "resend_activation_html", data)
+	data, err := util.InitializePage(w, r, store, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	err = templates.ExecuteTemplate(w, "resend_activation_html", data)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -135,6 +140,8 @@ var ResendActivationSubmit = func(w http.ResponseWriter, r *http.Request) {
 	// Set the URL path
 	restURL.Path = "/api/resendactivation"
 	urlStr := restURL.String()
+
+	session, err := util.GetSession(store, w, r)
 
 	// Get the input data from the form
 	r.ParseForm()
@@ -165,25 +172,57 @@ var ResendActivationSubmit = func(w http.ResponseWriter, r *http.Request) {
 			r.Send("views/mail/signup.html", map[string]string{"appName": appName, "username": userData["name"].(string), "activationLink": activationLink})
 		}
 
-		util.SetErrorSuccessFlash(w, resp)
+		util.SetErrorSuccessFlash(session, w, r, resp)
 
 		// Redirect back to the previous page
 		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusFound)
 	}
 }
 
+var ActivateAccountPage = func(w http.ResponseWriter, r *http.Request) {
+	var resp map[string]interface{}
+	
+	// Set the URL path
+	restURL.Path = "/api/activateaccount"
+	urlStr := restURL.String()
+
+	session, err := util.GetSession(store, w, r)
+
+	vars := mux.Vars(r)
+	// Set the input data
+	jsonData := map[string]interface{}{
+		"activationCode": vars["code"],
+	}
+
+	response, err := util.SendPostRequest(urlStr, jsonData)
+	
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		
+		// Parse it to json data
+		json.Unmarshal([]byte(string(data)), &resp)
+		
+		util.SetErrorSuccessFlash(session, w, r, resp)
+
+		// Redirect back to the login page
+		http.Redirect(w, r, "/login", http.StatusFound)
+	}
+}
 
 var ForgetPasswordPage = func(w http.ResponseWriter, r *http.Request) {
-	success, errors := util.GetFlashMessages(w, r)
-
 	data := map[string]interface{}{
 		"title": "Forgotten Password",
 		"appName": appName,
-		"errors": errors,
-		"success": success,
 	}
 
-	err := templates.ExecuteTemplate(w, "forget_password_html", data)
+	data, err := util.InitializePage(w, r, store, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	err = templates.ExecuteTemplate(w, "forget_password_html", data)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -196,6 +235,8 @@ var ForgetPasswordSubmit = func(w http.ResponseWriter, r *http.Request) {
 	// Set the URL path
 	restURL.Path = "/api/forgetpassword"
 	urlStr := restURL.String()
+
+	session, err := util.GetSession(store, w, r)
 
 	// Get the input data from the form
 	r.ParseForm()
@@ -226,7 +267,7 @@ var ForgetPasswordSubmit = func(w http.ResponseWriter, r *http.Request) {
 			r.Send("views/mail/reset_password.html", map[string]string{"appName": appName, "username": userData["name"].(string), "resetLink": resetLink})
 		}
 
-		util.SetErrorSuccessFlash(w, resp)
+		util.SetErrorSuccessFlash(session, w, r, resp)
 
 		// Redirect back to the previous page
 		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusFound)

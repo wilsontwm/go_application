@@ -118,7 +118,7 @@ func (user *User) ForgetPassword() (map[string] interface{}) {
 	} else if user.ActivationCode != nil {
 		resp = util.Message(false, http.StatusUnprocessableEntity, "The account has not been activated yet. Please activate the account first.", errors)
 	} else {
-		// Store the activation code to the user
+		// Store the reset password code to the user
 		hash := md5.New()
 		hash.Write([]byte(fmt.Sprint(user.ID) + time.Now().String()))	
 		resetPasswordCode := hex.EncodeToString(hash.Sum(nil))
@@ -132,6 +132,24 @@ func (user *User) ForgetPassword() (map[string] interface{}) {
 	return resp
 }
 
+func (user *User) ActivateAccount(code string) (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+	
+	// Get the user by email
+	user = GetUserByActivationCode(code)
+	
+	if user == nil {
+		resp = util.Message(false, http.StatusUnprocessableEntity, "Invalid activation link.", errors)
+	} else {
+		// Reset the activation code of the user		
+		GetDB().Model(&user).Update("ActivationCode", nil)
+		
+		resp = util.Message(true, http.StatusOK, "Thank you for signing up. Your account has been activated.", errors)	
+	}
+
+	return resp
+}
 /*
 func Login(email, password string) (map[string] interface{}) {
 	account := &Account{}
@@ -167,6 +185,17 @@ func Login(email, password string) (map[string] interface{}) {
 func GetUserByEmail(email string) *User {
 	user := &User{}
 	GetDB().Table("users").Where("email = ?", email).First(user)
+	if user.Email == "" {
+		return nil
+	}
+
+	user.Password = ""
+	return user
+}
+
+func GetUserByActivationCode(activationCode string) *User {
+	user := &User{}
+	GetDB().Table("users").Where("activation_code = ?", activationCode).First(user)
 	if user.Email == "" {
 		return nil
 	}

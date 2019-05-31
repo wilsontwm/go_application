@@ -6,6 +6,9 @@ import (
 	"reflect"
 	"encoding/json"
 	"gopkg.in/go-playground/validator.v9"
+	"github.com/gorilla/sessions"
+	"github.com/joho/godotenv"
+	"os"
 )
 
 // Build json message
@@ -34,13 +37,26 @@ func SendPostRequest(url string, data map[string]interface{}) (response *http.Re
 	return
 }
 
-// Get the success / errors flash message from the cookie
-func GetFlashMessages(w http.ResponseWriter, r *http.Request) (success string, errors []string) {
-	errorsByte, _ := GetFlash(w, r, "errors")
-	successByte, _ := GetFlash(w, r, "success")
-	json.Unmarshal([]byte(string(errorsByte)), &errors)
-	success = string(successByte)
+// Initialize a page
+func InitializePage(w http.ResponseWriter, r *http.Request, store *sessions.CookieStore, data map[string]interface{}) (output map[string]interface{}, err error) {
+	session, err := GetSession(store, w, r)
+	errorMessages := session.Flashes("errors")
+	successMessage := session.Flashes("success")
+	session.Save(r, w)
 
+	flash := map[string]interface{}{
+		"errors": errorMessages,
+		"success": successMessage,
+	}
+	output = MergeMapString(data, flash)
+	return
+}
+
+// Get a session
+func GetSession(store *sessions.CookieStore, w http.ResponseWriter, r *http.Request)(session *sessions.Session, err error) {
+	err = godotenv.Load() //Load .env file
+	sessionName := os.Getenv("session_name")
+	session, err = store.Get(r, sessionName)
 	return
 }
 
@@ -71,4 +87,22 @@ func GetErrorMessages(errors *[]string, err error) {
 	}
 
 	return
+}
+
+// Merge two map string interface
+func MergeMapString(mp1 map[string]interface{}, mp2 map[string]interface{}) (result map[string]interface{}) {
+	result = make(map[string]interface{})
+	for k, v := range mp1 {
+        if _, ok := mp1[k]; ok {
+            result[k] = v          
+        }
+    }
+
+    for k, v := range mp2 {
+        if _, ok := mp2[k]; ok {
+            result[k] = v
+        }
+	}
+	
+	return result;
 }

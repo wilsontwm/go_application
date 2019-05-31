@@ -1,64 +1,32 @@
 package utils
 
 import (
-  "encoding/base64"
   "net/http"
-  "time"  
-  "encoding/json"
+  "github.com/gorilla/sessions"
 )
 
 // Set the error/success flash message depends on the success state of the response
-func SetErrorSuccessFlash(w http.ResponseWriter, resp map[string]interface{}) {
+func SetErrorSuccessFlash(session *sessions.Session, w http.ResponseWriter, r *http.Request, resp map[string]interface{}) {
   // Set flash	
+  var messages []interface{}
+  
+  if(resp["errors"] != nil) {
+    messages = resp["errors"].([]interface{})
+  } else {
+    msg := resp["message"].(string)
+    messages = append(messages, msg)
+  }
+
+  var tag string
   if(resp["success"].(bool)) {
-		successFlash := []byte(resp["message"].(string))
-		SetFlash(w, "success", successFlash)
+		tag = "success"
 	} else {	
-    var errors []interface{}
-    
-    if(resp["errors"] != nil) {
-      errors = resp["errors"].([]interface{})
-    } else {
-      errorMsg := resp["message"].(string)
-      errors = append(errors, errorMsg)
-    }
-		
-		errorJson, _ := json.Marshal(errors)
-		errorFlash := []byte(errorJson)
-		SetFlash(w, "errors", errorFlash)
-	}
-}
-
-// Set the flash message into cookie
-func SetFlash(w http.ResponseWriter, name string, value []byte) {
-  c := &http.Cookie{Name: name, Value: encode(value)}
-  http.SetCookie(w, c)
-}
-
-// Get the flash message from cookie
-func GetFlash(w http.ResponseWriter, r *http.Request, name string) ([]byte, error) {
-  c, err := r.Cookie(name)
-  if err != nil {
-    switch err {
-		case http.ErrNoCookie:
-			return nil, nil
-		default:
-			return nil, err
-    }
+    tag = "errors"
   }
-  value, err := decode(c.Value)
-  if err != nil {
-    return nil, err
+
+  for _, message := range messages {
+    session.AddFlash(message, tag)
   }
-  dc := &http.Cookie{Name: name, MaxAge: -1, Expires: time.Unix(1, 0)}
-  http.SetCookie(w, dc)
-  return value, nil
-}
 
-func encode(src []byte) string {
-  return base64.URLEncoding.EncodeToString(src)
-}
-
-func decode(src string) ([]byte, error) {
-  return base64.URLEncoding.DecodeString(src)
+  session.Save(r, w)
 }
