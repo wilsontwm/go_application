@@ -150,6 +150,26 @@ func (user *User) ActivateAccount(code string) (map[string] interface{}) {
 
 	return resp
 }
+
+func (user *User) ResetPassword(code string, password string) (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+	
+	// Get the user by reset password code
+	user = GetUserByResetPasswordCode(code)
+	
+	if user == nil {
+		resp = util.Message(false, http.StatusUnprocessableEntity, "Invalid/expired reset password link.", errors)
+	} else {
+		// Reset the password of the user	
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)	
+		GetDB().Model(&user).Update(map[string]interface{}{"ResetPasswordCode": nil, "Password": string(hashedPassword) })
+		
+		resp = util.Message(true, http.StatusOK, "Successfully reset the password.", errors)	
+	}
+
+	return resp
+}
 /*
 func Login(email, password string) (map[string] interface{}) {
 	account := &Account{}
@@ -196,6 +216,17 @@ func GetUserByEmail(email string) *User {
 func GetUserByActivationCode(activationCode string) *User {
 	user := &User{}
 	GetDB().Table("users").Where("activation_code = ?", activationCode).First(user)
+	if user.Email == "" {
+		return nil
+	}
+
+	user.Password = ""
+	return user
+}
+
+func GetUserByResetPasswordCode(resetPasswordCode string) *User {
+	user := &User{}
+	GetDB().Table("users").Where("reset_password_code = ?", resetPasswordCode).First(user)
 	if user.Email == "" {
 		return nil
 	}

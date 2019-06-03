@@ -273,3 +273,68 @@ var ForgetPasswordSubmit = func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusFound)
 	}
 }
+
+var ResetPasswordPage = func(w http.ResponseWriter, r *http.Request) {
+	data := map[string]interface{}{
+		"title": "Reset Password",
+		"appName": appName,
+	}
+
+	data, err := util.InitializePage(w, r, store, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	err = templates.ExecuteTemplate(w, "reset_password_html", data)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+var ResetPasswordSubmit = func(w http.ResponseWriter, r *http.Request) {
+	var resp map[string]interface{}
+
+	// Set the URL path
+	restURL.Path = "/api/resetpassword"
+	urlStr := restURL.String()
+
+	session, err := util.GetSession(store, w, r)
+
+	// Get the input data from the form
+	r.ParseForm()	
+	vars := mux.Vars(r)
+	password := strings.TrimSpace( r.Form.Get("password"))
+	retype_password := strings.TrimSpace(r.Form.Get("retype_password"))
+
+	// Check if the retype password matches
+	if(password != retype_password) {
+		session.AddFlash("Retype password does not match.", "errors")
+		session.Save(r, w)
+		
+		// Redirect back to the previous page
+		http.Redirect(w, r, r.Header.Get("Referer") , http.StatusFound)
+
+		return
+	}
+
+	// Set the input data
+	jsonData := map[string]interface{}{
+		"password": password,
+		"resetPasswordCode": vars["code"],
+	}
+
+	response, err := util.SendPostRequest(urlStr, jsonData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		
+		// Parse it to json data
+		json.Unmarshal([]byte(string(data)), &resp)
+
+		util.SetErrorSuccessFlash(session, w, r, resp)
+		// Redirect back to the login page
+		http.Redirect(w, r, "/login", http.StatusFound)
+	}
+}
