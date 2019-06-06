@@ -258,13 +258,13 @@ var ForgetPasswordSubmit = func(w http.ResponseWriter, r *http.Request) {
 		
 		// Resend activation email
 		if(resp["success"].(bool)) {
-			userData := resp["data"].(map[string]interface{})
+			/*userData := resp["data"].(map[string]interface{})
 			resetLink := appURL + "/resetpassword/" + userData["resetPasswordCode"].(string)
 
 			subject := appName + " - Reset your password"
 			receiver := email
 			r := util.NewRequest([]string{receiver}, subject)
-			r.Send("views/mail/reset_password.html", map[string]string{"appName": appName, "username": userData["name"].(string), "resetLink": resetLink})
+			r.Send("views/mail/reset_password.html", map[string]string{"appName": appName, "username": userData["name"].(string), "resetLink": resetLink})*/
 		}
 
 		util.SetErrorSuccessFlash(session, w, r, resp)

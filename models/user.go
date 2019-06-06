@@ -26,6 +26,7 @@ type User struct {
 	Token *string `json:"token";sql:"-"`
 	ActivationCode *string `json:"activationCode"`
 	ResetPasswordCode *string `json:"resetPasswordCode"`
+	ResetPasswordExpiryDT *time.Time `json:resetPasswordExpiryDateTime`
 }
 
 // Validate the incoming details
@@ -93,7 +94,7 @@ func (user *User) ResendActivation() (map[string] interface{}) {
 
 	// Get the user by email
 	user = GetUserByEmail(user.Email)
-	fmt.Println(user.ActivationCode, user.ActivationCode == nil)
+	
 	if user == nil {
 		resp = util.Message(false, http.StatusUnprocessableEntity, "Invalid email address.", errors)
 	} else if user.ActivationCode == nil {
@@ -122,8 +123,12 @@ func (user *User) ForgetPassword() (map[string] interface{}) {
 		hash := md5.New()
 		hash.Write([]byte(fmt.Sprint(user.ID) + time.Now().String()))	
 		resetPasswordCode := hex.EncodeToString(hash.Sum(nil))
-		
-		GetDB().Model(&user).Update("ResetPasswordCode", resetPasswordCode)
+		// Add one hour to the expiry date for reseting the password
+		resetPasswordExpiryDT := time.Now().Local().Add(time.Hour * 1)
+		GetDB().Model(&user).Update(map[string]interface{}{
+			"ResetPasswordCode": resetPasswordCode,
+			"ResetPasswordExpiryDT": resetPasswordExpiryDT,
+		})
 		
 		resp = util.Message(true, http.StatusOK, "An email to reset password has been sent to you. Please check your inbox.", errors)		
 		resp["data"] = user
@@ -163,7 +168,11 @@ func (user *User) ResetPassword(code string, password string) (map[string] inter
 	} else {
 		// Reset the password of the user	
 		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)	
-		GetDB().Model(&user).Update(map[string]interface{}{"ResetPasswordCode": nil, "Password": string(hashedPassword) })
+		GetDB().Model(&user).Update(map[string]interface{}{
+			"ResetPasswordCode": nil, 
+			"ResetPasswordExpiryDT": nil,
+			"Password": string(hashedPassword), 
+		})
 		
 		resp = util.Message(true, http.StatusOK, "Successfully reset the password.", errors)	
 	}
@@ -226,7 +235,8 @@ func GetUserByActivationCode(activationCode string) *User {
 
 func GetUserByResetPasswordCode(resetPasswordCode string) *User {
 	user := &User{}
-	GetDB().Table("users").Where("reset_password_code = ?", resetPasswordCode).First(user)
+	now := time.Now().Local()
+	GetDB().Table("users").Where("reset_password_code = ?", resetPasswordCode).Where("reset_password_expiry_dt > ?", now).First(user)
 	if user.Email == "" {
 		return nil
 	}
