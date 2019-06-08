@@ -22,6 +22,7 @@ func main() {
 	router.HandleFunc("/", controllers.HelloPage).Methods("GET")
 	// Authenticate routes
 	router.HandleFunc("/login", controllers.LoginPage).Methods("GET")
+	router.HandleFunc("/login", controllers.LoginSubmit).Methods("POST")
 	router.HandleFunc("/signup", controllers.SignupPage).Methods("GET")
 	router.HandleFunc("/signup", controllers.SignupSubmit).Methods("POST")
 	router.HandleFunc("/resendactivation", controllers.ResendActivationPage).Methods("GET")	
@@ -33,6 +34,7 @@ func main() {
 	router.HandleFunc("/resetpassword/{code}", controllers.ResetPasswordSubmit).Methods("POST")
     
 	// REST routes
+	router.HandleFunc("/api/login", api.Login).Methods("POST")
 	router.HandleFunc("/api/signup", api.Signup).Methods("POST")
 	router.HandleFunc("/api/resendactivation", api.ResendActivation).Methods("POST")
 	router.HandleFunc("/api/activateaccount", api.ActivateAccount).Methods("POST")

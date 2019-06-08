@@ -41,6 +41,46 @@ var LoginPage = func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var LoginSubmit = func(w http.ResponseWriter, r *http.Request) {
+	var resp map[string]interface{}
+
+	// Set the URL path
+	restURL.Path = "/api/login"
+	urlStr := restURL.String()
+
+	session, err := util.GetSession(store, w, r)
+
+	// Get the input data from the form
+	r.ParseForm()
+	email := strings.TrimSpace(r.Form.Get("email"))
+	password := strings.TrimSpace( r.Form.Get("password"))
+
+	// Set the input data
+	jsonData := map[string]interface{}{
+		"email": email,
+		"password": password,
+	}
+
+	response, err := util.SendPostRequest(urlStr, jsonData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		
+		// Parse it to json data
+		json.Unmarshal([]byte(string(data)), &resp)
+		// If login is authenticated
+		if(resp["success"].(bool)) {
+			
+		}
+
+		util.SetErrorSuccessFlash(session, w, r, resp)
+
+		// Redirect back to the previous page
+		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusFound)
+	}
+}
+
 var SignupPage = func(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{
 		"title": "Signup",

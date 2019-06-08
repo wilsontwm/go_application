@@ -11,6 +11,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"time"
+	"os"
 )
 
 type Token struct {
@@ -23,13 +24,45 @@ type User struct {
 	Name string `json:"name";gorm:"not null"`
 	Email string `json:"email";gorm:"unique;not null"`
 	Password string `json:"password";gorm:"not null"`
-	Token *string `json:"token";sql:"-"`
+	Token string `json:"token";sql:"-"`
 	ActivationCode *string `json:"activationCode"`
 	ResetPasswordCode *string `json:"resetPasswordCode"`
 	ResetPasswordExpiryDT *time.Time `json:resetPasswordExpiryDateTime`
 }
 
-// Validate the incoming details
+func (user *User) Login(email string, password string) (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+	
+	// Get the user by email
+	GetDB().Table("users").Where("email = ?", email).First(&user)
+	
+	if user.Email == "" {
+		resp = util.Message(false, http.StatusUnprocessableEntity, "Invalid email address or password.", errors)
+	} else {
+		err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+		// If password does not match
+		if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
+			resp = util.Message(false, http.StatusUnprocessableEntity, "Invalid email address or password.", errors)
+		} else {
+			// Password matches
+			user.Password = "" // remove the password
+
+			// Create new JWT token for the newly registered account
+			tk := &Token{UserId: user.ID}
+			token := jwt.NewWithClaims(jwt.SigningMethodHS256, tk)
+			tokenString, _ := token.SignedString([]byte(os.Getenv("token_password")))
+			user.Token = tokenString
+
+			resp = util.Message(true, http.StatusOK, "You have successfully logged in.", errors)
+			resp["user"] = user
+		}
+	}
+
+	return resp
+}
+
+// Validate the incoming details for signup
 func (user *User) ValidateSignup() (map[string] interface{}, bool) {
 	var errors []string
 	var resp map[string] interface{}
@@ -64,7 +97,7 @@ func (user *User) Create() (map[string] interface{}) {
 
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	user.Password = string(hashedPassword)
-	user.Token = nil
+	user.Token = ""
 
 	GetDB().Create(user)
 
@@ -141,7 +174,7 @@ func (user *User) ActivateAccount(code string) (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
 	
-	// Get the user by email
+	// Get the user by activation code
 	user = GetUserByActivationCode(code)
 	
 	if user == nil {
@@ -179,37 +212,6 @@ func (user *User) ResetPassword(code string, password string) (map[string] inter
 
 	return resp
 }
-/*
-func Login(email, password string) (map[string] interface{}) {
-	account := &Account{}
-	err := GetDB().Table("accounts").Where("email = ?", email).First(account).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return u.Message(false, "Invalid email address or password.")
-		}
-
-		return u.Message(false, "Connection error. Please retry.")
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(account.Password), []byte(password))
-	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
-		return u.Message(false, "Invalid email address or password.")
-	}
-
-	account.Password = "" // delete the password
-
-	// Create new JWT token for the newly registered account
-	tk := &Token{UserId: user.ID}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, tk)
-	tokenString, _ := token.SignedString([]byte(os.Getenv("token_password")))
-	user.Token = tokenString
-
-	response := u.Message(true, "You have logged in.")
-	response["account"] = account
-
-	return response
-}
-*/
 
 func GetUserByEmail(email string) *User {
 	user := &User{}

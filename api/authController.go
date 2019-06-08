@@ -8,6 +8,11 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
+type LoginInput struct {
+	Email string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8,max=16"`
+}
+
 type SignupInput struct {
 	Name string `json:"name" validate:"required"`
 	Email string `json:"email" validate:"required,email"`
@@ -33,6 +38,35 @@ type ResetPasswordInput struct {
 
 // use a single instance of Validate, it caches struct info
 var validate *validator.Validate
+
+var Login = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+
+	input := LoginInput{}
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		errors = append(errors, err.Error())
+		util.Respond(w, util.Message(false, http.StatusInternalServerError, "Error decoding request body", errors))
+		return
+	}
+
+	// Validate the input
+	validate = validator.New()
+	err = validate.Struct(input)
+	if err != nil {
+		util.GetErrorMessages(&errors, err)
+
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Validation error", errors)
+		util.Respond(w, resp)
+		return
+	}
+	
+	// Login in the user
+	user := &models.User{}
+	resp := user.Login(input.Email, input.Password)
+	
+	util.Respond(w, resp)
+}
 
 var Signup = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
