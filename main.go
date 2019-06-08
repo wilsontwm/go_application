@@ -42,6 +42,9 @@ func main() {
 	// Asset files
 	router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 
+	// Custom 404 page
+	router.NotFoundHandler = http.HandlerFunc(controllers.Custom404Page)
+
 	port := os.Getenv("port")
 	if port == "" {
 		port = "8000"

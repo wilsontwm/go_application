@@ -29,7 +29,12 @@ var LoginPage = func(w http.ResponseWriter, r *http.Request) {
 		"appName": appName,
 	}
 
-	err := templates.ExecuteTemplate(w, "login_html", data)
+	data, err := util.InitializePage(w, r, store, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	err = templates.ExecuteTemplate(w, "login_html", data)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -336,5 +341,23 @@ var ResetPasswordSubmit = func(w http.ResponseWriter, r *http.Request) {
 		util.SetErrorSuccessFlash(session, w, r, resp)
 		// Redirect back to the login page
 		http.Redirect(w, r, "/login", http.StatusFound)
+	}
+}
+
+var Custom404Page = func(w http.ResponseWriter, r *http.Request) {
+	data := map[string]interface{}{
+		"title": "Page not found",
+		"appName": appName,
+	}
+
+	data, err := util.InitializePage(w, r, store, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	err = templates.ExecuteTemplate(w, "custom_404_html", data)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
