@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"app/controllers"
 	"app/api"
+	"app/middleware"
 )
 
 func main() {
@@ -20,26 +21,29 @@ func main() {
 	// Routes
 	// Pages routes
 	router.HandleFunc("/", controllers.HelloPage).Methods("GET")
-	// Authenticate routes
-	router.HandleFunc("/login", controllers.LoginPage).Methods("GET")
-	router.HandleFunc("/login", controllers.LoginSubmit).Methods("POST")
-	router.HandleFunc("/signup", controllers.SignupPage).Methods("GET")
-	router.HandleFunc("/signup", controllers.SignupSubmit).Methods("POST")
-	router.HandleFunc("/resendactivation", controllers.ResendActivationPage).Methods("GET")	
-	router.HandleFunc("/resendactivation", controllers.ResendActivationSubmit).Methods("POST")
-	router.HandleFunc("/activate/{code}", controllers.ActivateAccountPage).Methods("GET")	
-	router.HandleFunc("/forgetpassword", controllers.ForgetPasswordPage).Methods("GET")	
-	router.HandleFunc("/forgetpassword", controllers.ForgetPasswordSubmit).Methods("POST")
-	router.HandleFunc("/resetpassword/{code}", controllers.ResetPasswordPage).Methods("GET")	
-	router.HandleFunc("/resetpassword/{code}", controllers.ResetPasswordSubmit).Methods("POST")
-    
+	// Login / register routes	
+	nonAuthenticatedRoutes := router.PathPrefix("").Subrouter()
+	nonAuthenticatedRoutes.Use(middleware.LogTime(), middleware.Second())
+	nonAuthenticatedRoutes.HandleFunc("/login", controllers.LoginPage).Methods("GET")
+	nonAuthenticatedRoutes.HandleFunc("/login", controllers.LoginSubmit).Methods("POST")
+	nonAuthenticatedRoutes.HandleFunc("/signup", controllers.SignupPage).Methods("GET")
+	nonAuthenticatedRoutes.HandleFunc("/signup", controllers.SignupSubmit).Methods("POST")
+	nonAuthenticatedRoutes.HandleFunc("/resendactivation", controllers.ResendActivationPage).Methods("GET")	
+	nonAuthenticatedRoutes.HandleFunc("/resendactivation", controllers.ResendActivationSubmit).Methods("POST")
+	nonAuthenticatedRoutes.HandleFunc("/activate/{code}", controllers.ActivateAccountPage).Methods("GET")	
+	nonAuthenticatedRoutes.HandleFunc("/forgetpassword", controllers.ForgetPasswordPage).Methods("GET")	
+	nonAuthenticatedRoutes.HandleFunc("/forgetpassword", controllers.ForgetPasswordSubmit).Methods("POST")
+	nonAuthenticatedRoutes.HandleFunc("/resetpassword/{code}", controllers.ResetPasswordPage).Methods("GET")	
+	nonAuthenticatedRoutes.HandleFunc("/resetpassword/{code}", controllers.ResetPasswordSubmit).Methods("POST")
+	
 	// REST routes
-	router.HandleFunc("/api/login", api.Login).Methods("POST")
-	router.HandleFunc("/api/signup", api.Signup).Methods("POST")
-	router.HandleFunc("/api/resendactivation", api.ResendActivation).Methods("POST")
-	router.HandleFunc("/api/activateaccount", api.ActivateAccount).Methods("POST")
-	router.HandleFunc("/api/forgetpassword", api.ForgetPassword).Methods("POST")
-	router.HandleFunc("/api/resetpassword", api.ResetPassword).Methods("POST")
+	apiRoutes := router.PathPrefix("/api").Subrouter()
+	apiRoutes.HandleFunc("/login", api.Login).Methods("POST")
+	apiRoutes.HandleFunc("/signup", api.Signup).Methods("POST")
+	apiRoutes.HandleFunc("/resendactivation", api.ResendActivation).Methods("POST")
+	apiRoutes.HandleFunc("/activateaccount", api.ActivateAccount).Methods("POST")
+	apiRoutes.HandleFunc("/forgetpassword", api.ForgetPassword).Methods("POST")
+	apiRoutes.HandleFunc("/resetpassword", api.ResetPassword).Methods("POST")
 
 	// Asset files
 	router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
