@@ -1,0 +1,24 @@
+{{define "dashboard_html"}}
+<!DOCTYPE html>
+{{template "head_html" .}}
+
+<body class="hold-transition login-page">
+    <div class="login-box">
+      <div class="login-logo">
+        <a href="/"><b>{{.appName}}</b></a>
+      </div>
+      <!-- /.login-logo -->
+      <div class="card">
+        <div class="card-body login-card-body">
+          <p class="login-box-msg">Welcome to the dashboard</p>
+        </div>
+        <!-- /.login-card-body -->
+      </div>
+    </div>
+    <!-- /.login-box -->
+    {{template "flash_html" .}}
+</body>
+
+<!-- Javascript -->
+</html>
+{{end}}

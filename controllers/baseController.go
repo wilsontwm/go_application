@@ -3,11 +3,13 @@ package controllers
 import (
 	"os"
 	"log"
+	"net/http"
 	"github.com/joho/godotenv"
 	"html/template"
 	"path/filepath"
 	"net/url"
 	"github.com/gorilla/sessions"
+	"github.com/gorilla/securecookie"
 )
 
 var viewPath = "views"
@@ -16,6 +18,9 @@ var restURL *url.URL
 var appURL string
 var appName string
 var store *sessions.CookieStore
+var cookieHashKey []byte
+var cookieBlockKey []byte
+var sCookie *securecookie.SecureCookie
 
 func init() {
 	err := godotenv.Load() //Load .env file
@@ -28,6 +33,9 @@ func init() {
 	appURL = os.Getenv("app_url")
 	restURL, _ = url.ParseRequestURI(appURL)
 	store = sessions.NewCookieStore([]byte(os.Getenv("session_key")))
+	//cookieHashKey = []byte(os.Getenv("cookie_hash_key"))
+	//cookieBlockKey = []byte(os.Getenv("cookie_block_key"))
+	sCookie = securecookie.New(securecookie.GenerateRandomKey(32), securecookie.GenerateRandomKey(32))
 }
 
 func GetTemplates() (templates *template.Template, err error) {
@@ -53,4 +61,30 @@ func GetTemplates() (templates *template.Template, err error) {
 	}
 
     return
+}
+
+func SetCookieHandler(w http.ResponseWriter, r *http.Request, cookieName string, cookieValue string) {
+	value := cookieValue
+
+	if encoded, err := sCookie.Encode(cookieName, value); err == nil {
+		cookie := &http.Cookie{
+			Name: cookieName,
+			Value: encoded,			
+			Path:  "/",
+			// true means no scripts, http requests only
+			HttpOnly: true,
+		}
+
+		http.SetCookie(w, cookie)
+	}
+}
+
+func ReadCookieHandler(w http.ResponseWriter, r *http.Request, cookieName string) (cookieValue string) {
+	if cookie, err := r.Cookie(cookieName); err == nil {
+		if err = sCookie.Decode(cookieName, cookie.Value, &cookieValue); err == nil {
+			return
+		}
+	}
+
+	return 
 }

@@ -55,7 +55,7 @@ func (user *User) Login(email string, password string) (map[string] interface{})
 			user.Token = tokenString
 
 			resp = util.Message(true, http.StatusOK, "You have successfully logged in.", errors)
-			resp["user"] = user
+			resp["data"] = user
 		}
 	}
 

@@ -16,7 +16,7 @@ var HelloPage = func(w http.ResponseWriter, r *http.Request) {
 		"appName": appName,
 	}
 
-	err := templates.ExecuteTemplate(w, "home_html", data)
+	err := templates.ExecuteTemplate(w, "welcome_html", data)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -61,6 +61,7 @@ var LoginSubmit = func(w http.ResponseWriter, r *http.Request) {
 		"password": password,
 	}
 
+	url := r.Header.Get("Referer")
 	response, err := util.SendPostRequest(urlStr, jsonData)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -69,15 +70,20 @@ var LoginSubmit = func(w http.ResponseWriter, r *http.Request) {
 		
 		// Parse it to json data
 		json.Unmarshal([]byte(string(data)), &resp)
+
+		
 		// If login is authenticated
 		if(resp["success"].(bool)) {
-			
+			userData := resp["data"].(map[string]interface{})
+			// Store the user token in the cookie
+			SetCookieHandler(w, r, "auth", userData["token"].(string))
+			url = "/dashboard/"
 		}
 
 		util.SetErrorSuccessFlash(session, w, r, resp)
 
 		// Redirect back to the previous page
-		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusFound)
+		http.Redirect(w, r, url, http.StatusFound)
 	}
 }
 
@@ -381,6 +387,24 @@ var ResetPasswordSubmit = func(w http.ResponseWriter, r *http.Request) {
 		util.SetErrorSuccessFlash(session, w, r, resp)
 		// Redirect back to the login page
 		http.Redirect(w, r, "/login", http.StatusFound)
+	}
+}
+
+var Custom403Page = func(w http.ResponseWriter, r *http.Request) {
+	data := map[string]interface{}{
+		"title": "Not authorized",
+		"appName": appName,
+	}
+
+	data, err := util.InitializePage(w, r, store, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	err = templates.ExecuteTemplate(w, "custom_403_html", data)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 

@@ -1,0 +1,30 @@
+{{define "custom_403_html"}}
+<!DOCTYPE html>
+{{template "head_html" .}}
+
+<body class="hold-transition login-page">
+  <div class="">
+    <div class="login-logo" style="margin-top: 160px;">
+      <a href="/"><b>{{.appName}}</b></a>
+    </div>
+  
+    <div class="">
+      <div class="error-page">
+        <h2 class="headline text-warning"> 403</h2>
+
+        <div class="error-content">
+          <h3><i class="fa fa-warning text-warning"></i> Oops! You are not allowed to access this page.</h3>
+
+          <p>
+            Click <a href="/">here</a> return to homepage.
+          </p>
+        </div>
+        <!-- /.error-content -->
+      </div>
+    </div><!-- /.col-md-12 -->
+  </div>
+  <!-- /.register-box -->
+  {{template "flash_html" .}}
+</body>  
+</html>
+{{end}}
