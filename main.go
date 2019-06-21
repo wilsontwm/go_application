@@ -24,7 +24,6 @@ func main() {
 	router.HandleFunc("/noaccess", controllers.Custom403Page)
 	// Login / register routes	
 	nonAuthenticatedRoutes := router.PathPrefix("").Subrouter()
-	nonAuthenticatedRoutes.Use(middleware.LogTime(), middleware.Second())
 	nonAuthenticatedRoutes.HandleFunc("/login", controllers.LoginPage).Methods("GET")
 	nonAuthenticatedRoutes.HandleFunc("/login", controllers.LoginSubmit).Methods("POST")
 	nonAuthenticatedRoutes.HandleFunc("/signup", controllers.SignupPage).Methods("GET")
@@ -40,7 +39,7 @@ func main() {
 	authenticatedRoutes := router.PathPrefix("/dashboard").Subrouter()
 	authenticatedRoutes.Use(middleware.CheckAuth())
 	authenticatedRoutes.HandleFunc("/", controllers.DashboardPage).Methods("GET")
-
+	
 	// REST routes
 	apiRoutes := router.PathPrefix("/api").Subrouter()
 	apiRoutes.HandleFunc("/login", api.Login).Methods("POST")

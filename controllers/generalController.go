@@ -77,6 +77,7 @@ var LoginSubmit = func(w http.ResponseWriter, r *http.Request) {
 			userData := resp["data"].(map[string]interface{})
 			// Store the user token in the cookie
 			SetCookieHandler(w, r, "auth", userData["token"].(string))
+			SetCookieHandler(w, r, "name", userData["name"].(string))
 			url = "/dashboard/"
 		}
 

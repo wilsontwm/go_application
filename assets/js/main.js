@@ -3,6 +3,11 @@ $(document).ready(function(){
     loadingOverlay = document.querySelector('.loading');
     // Display the flash message
     window.Flash.create('.flash-message');
+
+    $(".sidebar").slimScroll({
+        height: 'auto',
+        color: '#CCCCCC'
+    });
 });
 
 // Show/hide the loading screen
