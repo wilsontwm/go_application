@@ -37,6 +37,21 @@ func SendPostRequest(url string, data map[string]interface{}) (response *http.Re
 	return
 }
 
+// Send a request to the url with authentication
+func SendAuthenticatedRequest(url string, requestType string, authToken string, data map[string]interface{}) (response *http.Response, err error) {
+	requestBody, err := json.Marshal(data)
+	
+	request, _ := http.NewRequest(requestType, url, bytes.NewBuffer(requestBody))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Bearer " + authToken)
+	
+	client := &http.Client{}
+
+	response, err = client.Do(request)
+
+	return
+}
+
 // Initialize a page
 func InitializePage(w http.ResponseWriter, r *http.Request, store *sessions.CookieStore, data map[string]interface{}) (output map[string]interface{}, err error) {
 	session, err := GetSession(store, w, r)

@@ -10,17 +10,17 @@ import (
 	//"fmt"
 )
 
-var HelloPage = func(w http.ResponseWriter, r *http.Request) {
-	data := map[string]interface{}{
-		"title": "Homepage",
-		"appName": appName,
+var WelcomePage = func(w http.ResponseWriter, r *http.Request) {
+	
+	url := "/login"
+
+	// Check if there is auth token set, if yes, then redirect to dashboard
+	authCookie := ReadCookieHandler(w, r, "auth")
+	if authCookie != "" {
+		url = "/dashboard"
 	}
 
-	err := templates.ExecuteTemplate(w, "welcome_html", data)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	http.Redirect(w, r, url, http.StatusFound)
 }
 
 var LoginPage = func(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +78,8 @@ var LoginSubmit = func(w http.ResponseWriter, r *http.Request) {
 			// Store the user token in the cookie
 			SetCookieHandler(w, r, "auth", userData["token"].(string))
 			SetCookieHandler(w, r, "name", userData["name"].(string))
-			url = "/dashboard/"
+			route, _ := mux.CurrentRoute(r).Subrouter().Get("dashboard").URL()
+			url = route.String()
 		}
 
 		util.SetErrorSuccessFlash(session, w, r, resp)
@@ -86,6 +87,17 @@ var LoginSubmit = func(w http.ResponseWriter, r *http.Request) {
 		// Redirect back to the previous page
 		http.Redirect(w, r, url, http.StatusFound)
 	}
+}
+
+var LogoutSubmit = func(w http.ResponseWriter, r *http.Request) {
+	session, _ := util.GetSession(store, w, r)
+	SetCookieHandler(w, r, "auth", "")
+	
+	session.AddFlash("You have successfully logged out.", "success")
+	session.Save(r, w)
+	// Redirect back to the welcome page
+	route, _ := mux.CurrentRoute(r).Subrouter().Get("welcome").URL()
+	http.Redirect(w, r, route.String(), http.StatusFound)
 }
 
 var SignupPage = func(w http.ResponseWriter, r *http.Request) {
@@ -259,7 +271,8 @@ var ActivateAccountPage = func(w http.ResponseWriter, r *http.Request) {
 		util.SetErrorSuccessFlash(session, w, r, resp)
 
 		// Redirect back to the login page
-		http.Redirect(w, r, "/login", http.StatusFound)
+		route, _ := mux.CurrentRoute(r).Subrouter().Get("login").URL()
+		http.Redirect(w, r, route.String(), http.StatusFound)
 	}
 }
 
@@ -387,7 +400,8 @@ var ResetPasswordSubmit = func(w http.ResponseWriter, r *http.Request) {
 
 		util.SetErrorSuccessFlash(session, w, r, resp)
 		// Redirect back to the login page
-		http.Redirect(w, r, "/login", http.StatusFound)
+		route, _ := mux.CurrentRoute(r).Subrouter().Get("login").URL()
+		http.Redirect(w, r, route.String(), http.StatusFound)
 	}
 }
 
