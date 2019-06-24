@@ -21,6 +21,7 @@ func main() {
 
 	// Routes
 	nonAuthenticatedRoutes := router.PathPrefix("").Subrouter()
+	nonAuthenticatedRoutes.Use(middleware.IsLoggedIn())
 	
 	// Pages routes
 	nonAuthenticatedRoutes.HandleFunc("/", controllers.WelcomePage).Methods("GET").Name("welcome")
