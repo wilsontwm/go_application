@@ -44,7 +44,8 @@ func main() {
 	authenticatedRoutes := router.PathPrefix("/dashboard").Subrouter()
 	authenticatedRoutes.Use(middleware.CheckAuth())
 	authenticatedRoutes.HandleFunc("", controllers.DashboardPage).Methods("GET").Name("dashboard")
-	authenticatedRoutes.HandleFunc("/profile/edit", controllers.EditProfilePage).Methods("GET").Name("profile_edit")
+	authenticatedRoutes.HandleFunc("/profile/edit", controllers.EditProfilePage).Methods("GET").Name("profile_edit")	
+	authenticatedRoutes.HandleFunc("/profile/edit", controllers.EditProfileSubmit).Methods("POST").Name("profile_edit_submit")
 	
 	// REST routes
 	apiRoutes := router.PathPrefix("/api").Subrouter()
@@ -61,6 +62,7 @@ func main() {
 	// Profiles routes
 	apiProfileRoutes := apiAuthenticatedRoutes.PathPrefix("/profile").Subrouter()
 	apiProfileRoutes.HandleFunc("/get", api.GetProfile).Methods("GET")
+	apiProfileRoutes.HandleFunc("/edit", api.EditProfile).Methods("POST")
 
 	// Asset files
 	router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))

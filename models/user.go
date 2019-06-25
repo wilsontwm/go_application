@@ -28,6 +28,7 @@ type User struct {
 	ActivationCode *string `json:"activationCode"`
 	ResetPasswordCode *string `json:"resetPasswordCode"`
 	ResetPasswordExpiryDT *time.Time `json:resetPasswordExpiryDateTime`
+	Bio string `json:"bio";sql:"type:text"`
 }
 
 func (user *User) Login(email string, password string) (map[string] interface{}) {
@@ -209,6 +210,20 @@ func (user *User) ResetPassword(code string, password string) (map[string] inter
 		
 		resp = util.Message(true, http.StatusOK, "Successfully reset the password.", errors)	
 	}
+
+	return resp
+}
+
+func (user *User) EditProfile() (map[string] interface{}) {
+	var errors []string
+
+	GetDB().Model(&user).Update(map[string]interface{}{
+		"Name": user.Name,
+		"Bio": user.Bio,
+	})
+
+	resp := util.Message(true, http.StatusOK, "Successfully updated profile.", errors)		
+	resp["data"] = user
 
 	return resp
 }
