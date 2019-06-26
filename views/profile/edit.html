@@ -60,12 +60,12 @@
                       </form>
                     </div><!-- /.tab-pane -->
                     <div class="tab-pane" id="password">
-                      <form class="form-horizontal">
+                      <form class="form-horizontal" id="edit-password-form" action="/dashboard/profile/edit/password" method="post">
                         <div class="form-group">
                           <label for="inputPassword" class="col-sm-2 control-label">Password</label>
   
                           <div class="col-sm-10">
-                            <input type="password" name="password" class="form-control" id="inputPassword" placeholder="Password">
+                            <input type="password" name="password" class="form-control" id="password_input" placeholder="Password">
                           </div>
                         </div>
                         <div class="form-group">
@@ -109,6 +109,6 @@
 </body>
 
 <!-- Javascript -->
-<script type="text/javascript" src="/assets/js/custom.profile.js"></script>
+<script type="text/javascript" src="/assets/js/profile/custom.profile.js"></script>
 </html>
 {{end}}

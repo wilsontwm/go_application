@@ -228,6 +228,20 @@ func (user *User) EditProfile() (map[string] interface{}) {
 	return resp
 }
 
+func (user *User) EditPassword() (map[string] interface{}) {
+	var errors []string
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	password := string(hashedPassword)
+
+	GetDB().Model(&user).Update(map[string]interface{}{
+		"Password": password,
+	})
+
+	resp := util.Message(true, http.StatusOK, "Successfully updated password.", errors)	
+
+	return resp
+}
+
 func GetUserByEmail(email string) *User {
 	user := &User{}
 	GetDB().Table("users").Where("email = ?", email).First(user)
