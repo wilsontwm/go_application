@@ -46,9 +46,10 @@ var EditProfilePage = func(w http.ResponseWriter, r *http.Request) {
 	jsonData := make(map[string]interface{})
 	response, err := util.SendAuthenticatedRequest(urlStr, "GET", auth, jsonData)
 	
-	// Check if response is forbidden
-	if response.StatusCode == http.StatusForbidden {
-		http.Redirect(w, r, "/noaccess", http.StatusFound)
+	// Check if response is unauthorized
+	if response.StatusCode == http.StatusUnauthorized {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
 	}
 
 	if err != nil {
@@ -105,9 +106,10 @@ var EditProfileSubmit = func(w http.ResponseWriter, r *http.Request) {
 
 	response, err := util.SendAuthenticatedRequest(urlStr, "POST", auth, jsonData)
 	
-	// Check if response is forbidden
-	if response.StatusCode == http.StatusForbidden {
-		http.Redirect(w, r, "/noaccess", http.StatusFound)
+	// Check if response is unauthorized
+	if response.StatusCode == http.StatusUnauthorized {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
 	}
 
 	if err != nil {
@@ -164,9 +166,10 @@ var EditPasswordSubmit = func(w http.ResponseWriter, r *http.Request) {
 
 	response, err := util.SendAuthenticatedRequest(urlStr, "POST", auth, jsonData)
 	
-	// Check if response is forbidden
-	if response.StatusCode == http.StatusForbidden {
-		http.Redirect(w, r, "/noaccess", http.StatusFound)
+	// Check if response is unauthorized
+	if response.StatusCode == http.StatusUnauthorized {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
 	}
 
 	if err != nil {

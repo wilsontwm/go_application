@@ -30,7 +30,6 @@ func main() {
 	// Login / register routes	
 	nonAuthenticatedRoutes.HandleFunc("/login", controllers.LoginPage).Methods("GET").Name("login")
 	nonAuthenticatedRoutes.HandleFunc("/login", controllers.LoginSubmit).Methods("POST").Name("login_submit")
-	nonAuthenticatedRoutes.HandleFunc("/logout", controllers.LogoutSubmit).Methods("GET").Name("logout")
 	nonAuthenticatedRoutes.HandleFunc("/signup", controllers.SignupPage).Methods("GET").Name("signup")
 	nonAuthenticatedRoutes.HandleFunc("/signup", controllers.SignupSubmit).Methods("POST").Name("signup_submit")
 	nonAuthenticatedRoutes.HandleFunc("/resendactivation", controllers.ResendActivationPage).Methods("GET").Name("resend_activation")	
@@ -42,7 +41,8 @@ func main() {
 	nonAuthenticatedRoutes.HandleFunc("/resetpassword/{code}", controllers.ResetPasswordSubmit).Methods("POST").Name("reset_password_submit")
 	
 	authenticatedRoutes := router.PathPrefix("/dashboard").Subrouter()
-	authenticatedRoutes.Use(middleware.CheckAuth())
+	authenticatedRoutes.Use(middleware.CheckAuth())	
+	authenticatedRoutes.HandleFunc("/logout", controllers.LogoutSubmit).Methods("GET").Name("logout")
 	authenticatedRoutes.HandleFunc("", controllers.DashboardPage).Methods("GET").Name("dashboard")
 	authenticatedRoutes.HandleFunc("/profile/edit", controllers.EditProfilePage).Methods("GET").Name("profile_edit")	
 	authenticatedRoutes.HandleFunc("/profile/edit", controllers.EditProfileSubmit).Methods("POST").Name("profile_edit_submit")

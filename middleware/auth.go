@@ -19,7 +19,7 @@ var CheckAuth = func() mux.MiddlewareFunc {
 			authCookie := controllers.ReadCookieHandler(w, r, "auth")
 			
 			if authCookie == "" {
-				http.Redirect(w, r, "/noaccess", http.StatusFound)
+				http.Redirect(w, r, "/login", http.StatusFound)
 				return
 			}
 
@@ -37,7 +37,7 @@ var IsLoggedIn = func() mux.MiddlewareFunc {
 
 			// Check if the request need authentication, 
 			// If not, then serve the request
-			for _, value := range toSkip {
+			for _, value := range toSkip {				
 				if value == requestPath {
 					handler.ServeHTTP(w, r)
 					return
@@ -67,7 +67,7 @@ var JwtAuthentication = func() mux.MiddlewareFunc {
 			// If token is missing, then return error code 403 Unauthorized
 			if tokenHeader == "" {
 				
-				response = util.Message(false, http.StatusForbidden, "Missing auth token", errors)
+				response = util.Message(false, http.StatusUnauthorized, "Missing auth token", errors)
 				util.Respond(w, response)
 				return
 			}
@@ -75,7 +75,7 @@ var JwtAuthentication = func() mux.MiddlewareFunc {
 			// Check if the token format is correct, ie. Bearer {token}
 			splitted := strings.Split(tokenHeader, " ")
 			if len(splitted) != 2 {
-				response = util.Message(false, http.StatusForbidden, "Invalid auth token format.", errors)
+				response = util.Message(false, http.StatusUnauthorized, "Invalid auth token format.", errors)
 				util.Respond(w, response)
 				return
 			}
@@ -88,13 +88,13 @@ var JwtAuthentication = func() mux.MiddlewareFunc {
 			})
 	
 			if err != nil {
-				response = util.Message(false, http.StatusForbidden, "Invalid auth token format.", errors)
+				response = util.Message(false, http.StatusUnauthorized, "Invalid auth token format.", errors)
 				util.Respond(w, response)
 				return
 			}
 	
 			if !token.Valid {
-				response = util.Message(false, http.StatusForbidden, "Token is not valid.", errors)
+				response = util.Message(false, http.StatusUnauthorized, "Token is not valid.", errors)
 				util.Respond(w, response)
 				return
 			}

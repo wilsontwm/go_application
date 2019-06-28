@@ -79,6 +79,17 @@ func SetCookieHandler(w http.ResponseWriter, r *http.Request, cookieName string,
 	}
 }
 
+func ClearCookieHandler(w http.ResponseWriter, cookieName string) {
+	cookie := &http.Cookie {
+		Name: cookieName,
+		Value: "",
+		Path: "/",
+		MaxAge: -1,
+	}
+
+	http.SetCookie(w, cookie)
+}
+
 func ReadCookieHandler(w http.ResponseWriter, r *http.Request, cookieName string) (cookieValue string) {
 	if cookie, err := r.Cookie(cookieName); err == nil {
 		if err = sCookie.Decode(cookieName, cookie.Value, &cookieValue); err == nil {

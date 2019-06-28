@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	util "app/utils"
 	"github.com/gorilla/mux"
-	//"fmt"
 )
 
 var WelcomePage = func(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +90,7 @@ var LoginSubmit = func(w http.ResponseWriter, r *http.Request) {
 
 var LogoutSubmit = func(w http.ResponseWriter, r *http.Request) {
 	session, _ := util.GetSession(store, w, r)
-	SetCookieHandler(w, r, "auth", "")
+	ClearCookieHandler(w, "auth")
 	
 	session.AddFlash("You have successfully logged out.", "success")
 	session.Save(r, w)
