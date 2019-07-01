@@ -41,7 +41,6 @@ var validate *validator.Validate
 
 var Login = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
-
 	input := LoginInput{}
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -64,7 +63,6 @@ var Login = func(w http.ResponseWriter, r *http.Request) {
 	// Login in the user
 	user := &models.User{}
 	resp := user.Login(input.Email, input.Password)
-	
 	util.Respond(w, resp)
 }
 

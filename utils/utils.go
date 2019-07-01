@@ -2,13 +2,9 @@ package utils
 
 import (	
 	"net/http"
-	"bytes"
 	"reflect"
 	"encoding/json"
 	"gopkg.in/go-playground/validator.v9"
-	"github.com/gorilla/sessions"
-	"github.com/joho/godotenv"
-	"os"
 )
 
 // Build json message
@@ -21,58 +17,6 @@ func Respond(w http.ResponseWriter, data map[string] interface{}) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(data["status"].(int))
 	json.NewEncoder(w).Encode(data)
-}
-
-// Send a post request to the url
-func SendPostRequest(url string, data map[string]interface{}) (response *http.Response, err error) {
-	requestBody, err := json.Marshal(data)
-	
-	request, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
-	request.Header.Set("Content-Type", "application/json")
-	
-	client := &http.Client{}
-
-	response, err = client.Do(request)
-
-	return
-}
-
-// Send a request to the url with authentication
-func SendAuthenticatedRequest(url string, requestType string, authToken string, data map[string]interface{}) (response *http.Response, err error) {
-	requestBody, err := json.Marshal(data)
-	
-	request, _ := http.NewRequest(requestType, url, bytes.NewBuffer(requestBody))
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Authorization", "Bearer " + authToken)
-	
-	client := &http.Client{}
-
-	response, err = client.Do(request)
-
-	return
-}
-
-// Initialize a page
-func InitializePage(w http.ResponseWriter, r *http.Request, store *sessions.CookieStore, data map[string]interface{}) (output map[string]interface{}, err error) {
-	session, err := GetSession(store, w, r)
-	errorMessages := session.Flashes("errors")
-	successMessage := session.Flashes("success")
-	session.Save(r, w)
-
-	flash := map[string]interface{}{
-		"errors": errorMessages,
-		"success": successMessage,
-	}
-	output = MergeMapString(data, flash)
-	return
-}
-
-// Get a session
-func GetSession(store *sessions.CookieStore, w http.ResponseWriter, r *http.Request)(session *sessions.Session, err error) {
-	err = godotenv.Load() //Load .env file
-	sessionName := os.Getenv("session_name")
-	session, err = store.Get(r, sessionName)
-	return
 }
 
 // Build the error message
