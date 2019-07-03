@@ -10,7 +10,7 @@ import (
 	util "app/utils"
 	"app/models"
 	"fmt"
-	//"time"
+	"time"
 )
 
 var Logging = func() mux.MiddlewareFunc {
@@ -62,6 +62,12 @@ var JwtAuthentication = func() mux.MiddlewareFunc {
 	
 			if !token.Valid {
 				response = util.Message(false, http.StatusUnauthorized, "Token is not valid.", errors)
+				util.Respond(w, response)
+				return
+			}
+
+			if time.Now().After(tk.Expiry) {
+				response = util.Message(false, http.StatusUnauthorized, "Token has expired. Please login again.", errors)
 				util.Respond(w, response)
 				return
 			}

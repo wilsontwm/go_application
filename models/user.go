@@ -16,6 +16,7 @@ import (
 
 type Token struct {
 	UserId uint
+	Expiry time.Time
 	jwt.StandardClaims
 }
 
@@ -50,7 +51,8 @@ func (user *User) Login(email string, password string) (map[string] interface{})
 			user.Password = "" // remove the password
 
 			// Create new JWT token for the newly registered account
-			tk := &Token{UserId: user.ID}
+			expiry := time.Now().Add(time.Hour * 2) // Only valid for 2 hours
+			tk := &Token{UserId: user.ID, Expiry: expiry}
 			token := jwt.NewWithClaims(jwt.SigningMethodHS256, tk)
 			tokenString, _ := token.SignedString([]byte(os.Getenv("token_password")))
 			user.Token = tokenString
