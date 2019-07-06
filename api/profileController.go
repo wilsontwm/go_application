@@ -13,6 +13,10 @@ type EditProfileInput struct {
 	Bio string `json:"bio"`
 }
 
+type UploadPictureInput struct {
+	ProfilePicture string `json:"profilePicture"`
+}
+
 type EditPasswordInput struct {
 	Password string `json:"password" validate:"required,min=8,max=16"`
 }
@@ -70,6 +74,33 @@ var EditProfile = func(w http.ResponseWriter, r *http.Request) {
 	user.Name = input.Name	
 	user.Bio = input.Bio
 	resp := user.EditProfile()
+	
+	util.Respond(w, resp)
+}
+
+var UploadPicture = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	userId := r.Context().Value("user") . (uint)
+
+	user := models.GetUser(userId)
+
+	if user == nil {
+		resp := util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		util.Respond(w, resp)
+		return
+	}
+
+	input := UploadPictureInput{}
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		errors = append(errors, err.Error())
+		util.Respond(w, util.Message(false, http.StatusInternalServerError, "Error decoding request body", errors))
+		return
+	}
+
+	// Save the data into database
+	user.ProfilePicture = input.ProfilePicture	
+	resp := user.UploadPicture()
 	
 	util.Respond(w, resp)
 }

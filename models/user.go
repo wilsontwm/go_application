@@ -25,6 +25,7 @@ type User struct {
 	Name string `json:"name";gorm:"not null"`
 	Email string `json:"email";gorm:"unique;not null"`
 	Password string `json:"password";gorm:"not null"`
+	ProfilePicture string `json:"profilePicture"`
 	Token string `json:"token";sql:"-"`
 	ActivationCode *string `json:"activationCode"`
 	ResetPasswordCode *string `json:"resetPasswordCode"`
@@ -225,6 +226,19 @@ func (user *User) EditProfile() (map[string] interface{}) {
 	})
 
 	resp := util.Message(true, http.StatusOK, "Successfully updated profile.", errors)		
+	resp["data"] = user
+
+	return resp
+}
+
+func (user *User) UploadPicture() (map[string] interface{}) {
+	var errors []string
+
+	GetDB().Model(&user).Update(map[string]interface{}{
+		"ProfilePicture": user.ProfilePicture,
+	})
+
+	resp := util.Message(true, http.StatusOK, "Successfully uploaded profile picture.", errors)		
 	resp["data"] = user
 
 	return resp

@@ -36,6 +36,7 @@ func main() {
 	apiProfileRoutes.HandleFunc("/get", api.GetProfile).Methods("GET")
 	apiProfileRoutes.HandleFunc("/edit", api.EditProfile).Methods("POST")
 	apiProfileRoutes.HandleFunc("/edit/password", api.EditPassword).Methods("POST")
+	apiProfileRoutes.HandleFunc("/upload/picture", api.UploadPicture).Methods("POST")
 
 	port := os.Getenv("port")
 	if port == "" {
