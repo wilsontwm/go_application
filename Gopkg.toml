@@ -25,6 +25,11 @@
 #   unused-packages = true
 
 
+[metadata.heroku]
+  root-package = "github.com/wilsontwm/go_application"
+  go-version = "1.12.4"
+  install = [ "./..." ]
+
 [[constraint]]
   name = "github.com/gorilla/mux"
   version = "1.7.1"
