@@ -6,10 +6,16 @@ import (
 	"encoding/json"
 	"app/models"
 	"gopkg.in/go-playground/validator.v9"
+	"time"
 )
 
 type EditProfileInput struct {
 	Name string `json:"name" validate:"required"`
+	Phone string `json:"phone"`
+	City string `json:"city"`
+	Country int `json:"country"`
+	Gender int `json:"gender"`
+	Birthday *time.Time `json:"birthday"`
 	Bio string `json:"bio"`
 }
 
@@ -24,7 +30,8 @@ type EditPasswordInput struct {
 // Get the profile information
 var GetProfile = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
-
+	countries := models.GetCountries()
+	genders := models.GetGenders()
 	userId := r.Context().Value("user") . (uint)
 
 	user := models.GetUser(userId)
@@ -35,8 +42,10 @@ var GetProfile = func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := util.Message(true, http.StatusOK, "Successfully reset the password.", errors)	
+	resp := util.Message(true, http.StatusOK, "Successfully retrieved the data.", errors)	
 	resp["data"] = user
+	resp["countries"] = countries
+	resp["genders"] = genders
 	util.Respond(w, resp)
 }
 
@@ -72,7 +81,17 @@ var EditProfile = func(w http.ResponseWriter, r *http.Request) {
 	}
 	// Save the data into database
 	user.Name = input.Name	
+	user.Phone = input.Phone
+	user.City = input.City
+	user.Country = input.Country
+	user.Gender = input.Gender
+	user.Birthday = input.Birthday
 	user.Bio = input.Bio
+
+	if(input.Birthday.IsZero()) {
+		user.Birthday = nil
+	}
+	
 	resp := user.EditProfile()
 	
 	util.Respond(w, resp)

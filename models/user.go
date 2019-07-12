@@ -14,6 +14,10 @@ import (
 	"os"
 )
 
+const (
+	formattedDate = "01/02/2006"
+)
+
 type Token struct {
 	UserId uint
 	Expiry time.Time
@@ -26,10 +30,16 @@ type User struct {
 	Email string `json:"email";gorm:"unique;not null"`
 	Password string `json:"password";gorm:"not null"`
 	ProfilePicture string `json:"profilePicture"`
-	Token string `json:"token";sql:"-"`
+	Token string `json:"token";gorm:"-"`
 	ActivationCode *string `json:"activationCode"`
 	ResetPasswordCode *string `json:"resetPasswordCode"`
-	ResetPasswordExpiryDT *time.Time `json:resetPasswordExpiryDateTime`
+	ResetPasswordExpiryDT *time.Time `json:"resetPasswordExpiryDateTime"`
+	Phone string `json:"phone"`
+	City string `json:"city"`
+	Country int `json:"country";gorm:"default:'0'"`
+	Gender int `json:"gender";gorm:"default:'0'"`
+	Birthday *time.Time `json:"birthday"`
+	BirthdayString string `json:"birthdayString";gorm:"-"`
 	Bio string `json:"bio";sql:"type:text"`
 }
 
@@ -222,6 +232,11 @@ func (user *User) EditProfile() (map[string] interface{}) {
 
 	GetDB().Model(&user).Update(map[string]interface{}{
 		"Name": user.Name,
+		"Phone": user.Phone,
+		"City": user.City,
+		"Country": user.Country,
+		"Gender": user.Gender,
+		"Birthday": user.Birthday,
 		"Bio": user.Bio,
 	})
 
@@ -258,47 +273,44 @@ func (user *User) EditPassword() (map[string] interface{}) {
 	return resp
 }
 
-func GetUserByEmail(email string) *User {
-	user := &User{}
-	GetDB().Table("users").Where("email = ?", email).First(user)
+func getUser(user *User) *User {
 	if user.Email == "" {
 		return nil
 	}
 
 	user.Password = ""
+	if(user.Birthday != nil) {
+		user.BirthdayString = user.Birthday.Format(formattedDate)
+	}
+
 	return user
+}
+
+func GetUserByEmail(email string) *User {
+	user := &User{}
+	GetDB().Table("users").Where("email = ?", email).First(user)
+	
+	return getUser(user)
 }
 
 func GetUserByActivationCode(activationCode string) *User {
 	user := &User{}
 	GetDB().Table("users").Where("activation_code = ?", activationCode).First(user)
-	if user.Email == "" {
-		return nil
-	}
-
-	user.Password = ""
-	return user
+	
+	return getUser(user)
 }
 
 func GetUserByResetPasswordCode(resetPasswordCode string) *User {
 	user := &User{}
 	now := time.Now().Local()
 	GetDB().Table("users").Where("reset_password_code = ?", resetPasswordCode).Where("reset_password_expiry_dt > ?", now).First(user)
-	if user.Email == "" {
-		return nil
-	}
-
-	user.Password = ""
-	return user
+	
+	return getUser(user)
 }
 
 func GetUser(u uint) *User {
 	user := &User{}
 	GetDB().Table("users").Where("id = ?", u).First(user)
-	if user.Email == "" {
-		return nil
-	}
-
-	user.Password = ""
-	return user
+	
+	return getUser(user)
 }
