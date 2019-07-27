@@ -1,8 +1,8 @@
 package models
 
 import (
-	//"database/sql"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/satori/go.uuid"
 	util "app/utils"
 	"fmt"
 	"net/http"
@@ -19,13 +19,13 @@ const (
 )
 
 type Token struct {
-	UserId uint
+	UserId uuid.UUID
 	Expiry time.Time
 	jwt.StandardClaims
 }
 
 type User struct {
-	gorm.Model
+	Base
 	Name string `json:"name";gorm:"not null"`
 	Email string `json:"email";gorm:"unique;not null"`
 	Password string `json:"password";gorm:"not null"`
@@ -115,7 +115,7 @@ func (user *User) Create() (map[string] interface{}) {
 
 	GetDB().Create(user)
 
-	if user.ID <= 0 {
+	if user.ID == uuid.Nil {
 		resp := util.Message(false, http.StatusInternalServerError, "Failed to create account, connection error.", errors)
 		return resp;
 	}
@@ -129,7 +129,7 @@ func (user *User) Create() (map[string] interface{}) {
 	
 	user.Password = "" // delete the password
 
-	resp := util.Message(true, http.StatusOK, "You have successfully signed up.", errors)
+	resp := util.Message(true, http.StatusOK, "You have successfully signed up. An activation email will be sent to you.", errors)
 	resp["data"] = user
 
 	return resp
@@ -308,7 +308,7 @@ func GetUserByResetPasswordCode(resetPasswordCode string) *User {
 	return getUser(user)
 }
 
-func GetUser(u uint) *User {
+func GetUser(u uuid.UUID) *User {
 	user := &User{}
 	GetDB().Table("users").Where("id = ?", u).First(user)
 	

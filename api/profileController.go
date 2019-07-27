@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"app/models"
 	"gopkg.in/go-playground/validator.v9"
+	"github.com/satori/go.uuid"
 	"time"
 )
 
@@ -32,7 +33,7 @@ var GetProfile = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
 	countries := models.GetCountries()
 	genders := models.GetGenders()
-	userId := r.Context().Value("user") . (uint)
+	userId := r.Context().Value("user") . (uuid.UUID)
 
 	user := models.GetUser(userId)
 
@@ -51,7 +52,7 @@ var GetProfile = func(w http.ResponseWriter, r *http.Request) {
 
 var EditProfile = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
-	userId := r.Context().Value("user") . (uint)
+	userId := r.Context().Value("user") . (uuid.UUID)
 
 	user := models.GetUser(userId)
 
@@ -99,7 +100,7 @@ var EditProfile = func(w http.ResponseWriter, r *http.Request) {
 
 var UploadPicture = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
-	userId := r.Context().Value("user") . (uint)
+	userId := r.Context().Value("user") . (uuid.UUID)
 
 	user := models.GetUser(userId)
 
@@ -126,7 +127,7 @@ var UploadPicture = func(w http.ResponseWriter, r *http.Request) {
 
 var EditPassword = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
-	userId := r.Context().Value("user") . (uint)
+	userId := r.Context().Value("user") . (uuid.UUID)
 
 	user := models.GetUser(userId)
 

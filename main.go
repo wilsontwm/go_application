@@ -38,6 +38,11 @@ func main() {
 	apiProfileRoutes.HandleFunc("/edit/password", api.EditPassword).Methods("POST")
 	apiProfileRoutes.HandleFunc("/upload/picture", api.UploadPicture).Methods("POST")
 
+	// Company routes
+	apiCompanyRoutes := apiAuthenticatedRoutes.PathPrefix("/company").Subrouter()
+	apiCompanyRoutes.HandleFunc("/index", api.IndexCompany).Methods("POST")
+	apiCompanyRoutes.HandleFunc("/store", api.CreateCompany).Methods("POST")
+
 	port := os.Getenv("port")
 	if port == "" {
 		port = "8000"
