@@ -10,4 +10,5 @@ type Role struct {
 	Name string
 	IsAdmin bool `gorm:"default:false"`
 	CompanyID uuid.UUID `gorm:"type:uuid;not null;"`
+	CompanyUsers []CompanyUser `gorm:"foreignkey:UserID"`
 }

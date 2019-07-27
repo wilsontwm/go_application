@@ -30,7 +30,7 @@ type User struct {
 	Email string `json:"email";gorm:"unique;not null"`
 	Password string `json:"password";gorm:"not null"`
 	ProfilePicture string `json:"profilePicture"`
-	Token string `json:"token";gorm:"-"`
+	Token string `json:"token";sql:"-"`
 	ActivationCode *string `json:"activationCode"`
 	ResetPasswordCode *string `json:"resetPasswordCode"`
 	ResetPasswordExpiryDT *time.Time `json:"resetPasswordExpiryDateTime"`
@@ -39,8 +39,9 @@ type User struct {
 	Country int `json:"country";gorm:"default:'0'"`
 	Gender int `json:"gender";gorm:"default:'0'"`
 	Birthday *time.Time `json:"birthday"`
-	BirthdayString string `json:"birthdayString";gorm:"-"`
+	BirthdayString string `json:"birthdayString";sql:"-"`
 	Bio string `json:"bio";sql:"type:text"`
+	CompanyUsers []CompanyUser `gorm:"foreignkey:UserID"`
 }
 
 func (user *User) Login(email string, password string) (map[string] interface{}) {

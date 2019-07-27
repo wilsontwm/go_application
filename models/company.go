@@ -18,7 +18,15 @@ type Company struct {
 	Fax string
 	Address string
 	Roles []Role `gorm:"foreignkey:CompanyID"`
+	Users []User `gorm:"many2many:company_users"`
+	CompanyUsers []CompanyUser `gorm:"foreignkey:CompanyID"`
 }
+
+type CompanyResult struct {
+	Name string
+	CompanyID uuid.UUID
+	IsAdmin bool
+  }
 
 // Validate the incoming details for creation of company
 func (company *Company) Validate() (map[string] interface{}, bool) {
@@ -48,10 +56,13 @@ func (company *Company) Validate() (map[string] interface{}, bool) {
 func (user User) IndexCompany() (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
-	data := make(map[string] interface{})
+
+	// Get the companies for the user
+	result := &[]CompanyResult{}
+	GetDB().Raw("SELECT C.name, C.id as company_id, R.is_admin FROM companies C JOIN company_users CU ON CU.company_id = C.id JOIN roles R ON R.id = CU.role_id WHERE CU.user_id = ? ORDER BY C.name ASC", user.ID).Scan(&result)
 	
 	resp = util.Message(true, http.StatusOK, "", errors)
-	resp["data"] = data
+	resp["companies"] = result
 
 	return resp
 }
