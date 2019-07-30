@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"github.com/gorilla/mux"
 	util "app/utils"
 	"encoding/json"
 	"app/models"
@@ -78,6 +79,29 @@ var CreateCompany = func(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	resp := user.CreateCompany(&company)
+	
+	util.Respond(w, resp)
+}
+
+var ShowCompany = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	userId := r.Context().Value("user") . (uuid.UUID)
+
+	user := models.GetUser(userId)
+
+	if user == nil {
+		resp := util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		util.Respond(w, resp)
+		return
+	}
+
+	// Get the ID of the company passed in via URL
+	vars := mux.Vars(r)
+	companyId, _ := uuid.FromString(vars["id"]) 
+
+	company := &models.Company{}
+	
+	resp := company.ShowCompany(companyId, userId)
 	
 	util.Respond(w, resp)
 }

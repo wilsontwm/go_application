@@ -42,6 +42,7 @@ func main() {
 	apiCompanyRoutes := apiAuthenticatedRoutes.PathPrefix("/company").Subrouter()
 	apiCompanyRoutes.HandleFunc("/index", api.IndexCompany).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/store", api.CreateCompany).Methods("POST")
+	apiCompanyRoutes.HandleFunc("/{id}/show", api.ShowCompany).Methods("GET")
 
 	port := os.Getenv("port")
 	if port == "" {

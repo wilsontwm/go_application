@@ -37,8 +37,10 @@ func (company *Company) Validate() (map[string] interface{}, bool) {
 	temp := &Company{}
 
 	// Check for errors and duplicate slug
-	err := GetDB().Table("companies").Where("slug = ?", company.Slug).First(temp).Error
-
+	db := GetDB()
+	err := db.Table("companies").Where("slug = ?", company.Slug).First(temp).Error
+	defer db.Close()
+	
 	if err != nil && err != gorm.ErrRecordNotFound {
 		resp = util.Message(false, http.StatusInternalServerError, "Connection error. Please retry.", errors)
 		return resp, false
@@ -59,7 +61,9 @@ func (user User) IndexCompany() (map[string] interface{}) {
 
 	// Get the companies for the user
 	result := &[]CompanyResult{}
-	GetDB().Raw("SELECT C.name, C.id as company_id, R.is_admin FROM companies C JOIN company_users CU ON CU.company_id = C.id JOIN roles R ON R.id = CU.role_id WHERE CU.user_id = ? ORDER BY C.name ASC", user.ID).Scan(&result)
+	db := GetDB()
+	db.Raw("SELECT C.name, C.id as company_id, R.is_admin FROM companies C JOIN company_users CU ON CU.company_id = C.id JOIN roles R ON R.id = CU.role_id WHERE CU.user_id = ? ORDER BY C.name ASC", user.ID).Scan(&result)
+	defer db.Close()
 	
 	resp = util.Message(true, http.StatusOK, "", errors)
 	resp["companies"] = result
@@ -87,9 +91,30 @@ func (user User) CreateCompany(company *Company) (map[string] interface{}) {
 	return resp
 }
 
+func (company *Company) ShowCompany(id, userId uuid.UUID) (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+
+	// Only retrieve the company if user is in current company
+	db := GetDB()
+	db.Raw("SELECT * FROM companies C JOIN company_users CU ON CU.company_id = C.id WHERE CU.user_id = ? AND C.id = ? LIMIT 1", userId, id).Scan(&company)
+	defer db.Close()
+
+	if company.ID == uuid.Nil {
+		resp = util.Message(false, http.StatusUnprocessableEntity, "No available result.", errors)
+	} else {		
+		resp = util.Message(true, http.StatusOK, "", errors)
+		resp["data"] = company
+	}
+	
+	return resp
+}
+
 // The database transaction to create company
 func CreateCompanyTransaction(user User, company *Company) error {
 	db := GetDB()
+
+	defer db.Close()
 	// Note the use of tx as the database handle once you are within a transaction
 	tx := db.Begin()
 	
