@@ -38,7 +38,7 @@ func (company *Company) Validate() (map[string] interface{}, bool) {
 
 	// Check for errors and duplicate slug
 	db := GetDB()
-	err := db.Table("companies").Where("slug = ?", company.Slug).First(temp).Error
+	err := db.Table("companies").Where("slug = ? and id <> ?", company.Slug, company.ID).First(temp).Error
 	defer db.Close()
 	
 	if err != nil && err != gorm.ErrRecordNotFound {
@@ -95,12 +95,9 @@ func (company *Company) ShowCompany(id, userId uuid.UUID) (map[string] interface
 	var errors []string
 	var resp map[string] interface{}
 
-	// Only retrieve the company if user is in current company
-	db := GetDB()
-	db.Raw("SELECT * FROM companies C JOIN company_users CU ON CU.company_id = C.id WHERE CU.user_id = ? AND C.id = ? LIMIT 1", userId, id).Scan(&company)
-	defer db.Close()
+	company = GetCompany(id, userId)
 
-	if company.ID == uuid.Nil {
+	if company == nil {
 		resp = util.Message(false, http.StatusUnprocessableEntity, "No available result.", errors)
 	} else {		
 		resp = util.Message(true, http.StatusOK, "", errors)
@@ -108,6 +105,39 @@ func (company *Company) ShowCompany(id, userId uuid.UUID) (map[string] interface
 	}
 	
 	return resp
+}
+
+func (company *Company) EditCompany() (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+	
+	// Validate the input first
+	if resp, ok := company.Validate(); !ok {
+		return resp;
+	}
+	
+	db := GetDB()
+	db.Model(&company).Updates(company)
+	defer db.Close()
+
+	resp = util.Message(true, http.StatusOK, "You have successfully updated company details.", errors)
+	resp["data"] = company
+
+	return resp
+}
+
+func GetCompany(companyId, userId uuid.UUID) *Company {
+	// Only retrieve the company if user is in current company
+	company := &Company{}
+	db := GetDB()
+	db.Raw("SELECT * FROM companies C JOIN company_users CU ON CU.company_id = C.id WHERE CU.user_id = ? AND C.id = ? LIMIT 1", userId, companyId).Scan(company)
+	defer db.Close()
+
+	if company.ID == uuid.Nil {
+		return nil
+	}
+
+	return company
 }
 
 // The database transaction to create company

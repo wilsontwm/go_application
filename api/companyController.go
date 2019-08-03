@@ -105,3 +105,52 @@ var ShowCompany = func(w http.ResponseWriter, r *http.Request) {
 	
 	util.Respond(w, resp)
 }
+
+var EditCompany = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	userId := r.Context().Value("user") . (uuid.UUID)
+
+	user := models.GetUser(userId)
+
+	// Get the ID of the company passed in via URL
+	vars := mux.Vars(r)
+	companyId, _ := uuid.FromString(vars["id"]) 
+	company := models.GetCompany(companyId, userId) 
+
+	if user == nil || company == nil  {
+		resp := util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		util.Respond(w, resp)
+		return
+	} 
+
+	input := CompanyInput{}
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		errors = append(errors, err.Error())
+		util.Respond(w, util.Message(false, http.StatusInternalServerError, "Error decoding request body", errors))
+		return
+	}
+
+	// Validate the input
+	validate = validator.New()
+	err = validate.Struct(input)
+	if err != nil {
+		util.GetErrorMessages(&errors, err)
+		
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Validation error", errors)
+		util.Respond(w, resp)
+		return
+	}
+
+	company.Name = input.Name
+	company.Slug = input.Slug
+	company.Description = input.Description
+	company.Email = input.Email
+	company.Phone = input.Phone
+	company.Fax = input.Fax
+	company.Address = input.Address
+	
+	resp := company.EditCompany()
+	
+	util.Respond(w, resp)
+}
