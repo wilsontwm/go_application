@@ -62,7 +62,7 @@ func (user User) IndexCompany() (map[string] interface{}) {
 	// Get the companies for the user
 	result := &[]CompanyResult{}
 	db := GetDB()
-	db.Raw("SELECT C.name, C.id as company_id, R.is_admin FROM companies C JOIN company_users CU ON CU.company_id = C.id JOIN roles R ON R.id = CU.role_id WHERE CU.user_id = ? ORDER BY C.name ASC", user.ID).Scan(&result)
+	db.Raw("SELECT C.name, C.id as company_id, R.is_admin FROM companies C JOIN company_users CU ON CU.company_id = C.id JOIN roles R ON R.id = CU.role_id WHERE CU.user_id = ? AND C.deleted_at is NULL ORDER BY C.name ASC", user.ID).Scan(&result)
 	defer db.Close()
 	
 	resp = util.Message(true, http.StatusOK, "", errors)
@@ -126,11 +126,24 @@ func (company *Company) EditCompany() (map[string] interface{}) {
 	return resp
 }
 
+func (company *Company) DeleteCompany() (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+	
+	db := GetDB()
+	db.Delete(&company)
+	defer db.Close()
+
+	resp = util.Message(true, http.StatusOK, "You have successfully deleted the company.", errors)
+
+	return resp
+}
+
 func GetCompany(companyId, userId uuid.UUID) *Company {
 	// Only retrieve the company if user is in current company
 	company := &Company{}
 	db := GetDB()
-	db.Raw("SELECT * FROM companies C JOIN company_users CU ON CU.company_id = C.id WHERE CU.user_id = ? AND C.id = ? LIMIT 1", userId, companyId).Scan(company)
+	db.Raw("SELECT * FROM companies C JOIN company_users CU ON CU.company_id = C.id WHERE CU.user_id = ? AND C.id = ? AND deleted_at is NULL LIMIT 1", userId, companyId).Scan(company)
 	defer db.Close()
 
 	if company.ID == uuid.Nil {

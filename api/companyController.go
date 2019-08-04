@@ -154,3 +154,25 @@ var EditCompany = func(w http.ResponseWriter, r *http.Request) {
 	
 	util.Respond(w, resp)
 }
+
+var DeleteCompany = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	userId := r.Context().Value("user") . (uuid.UUID)
+
+	user := models.GetUser(userId)
+
+	// Get the ID of the company passed in via URL
+	vars := mux.Vars(r)
+	companyId, _ := uuid.FromString(vars["id"]) 
+	company := models.GetCompany(companyId, userId) 
+
+	if user == nil || company == nil  {
+		resp := util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		util.Respond(w, resp)
+		return
+	} 
+	
+	resp := company.DeleteCompany()
+	
+	util.Respond(w, resp)
+}

@@ -43,7 +43,8 @@ func main() {
 	apiCompanyRoutes.HandleFunc("/index", api.IndexCompany).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/store", api.CreateCompany).Methods("POST")
 	apiCompanyRoutes.HandleFunc("/{id}/show", api.ShowCompany).Methods("GET")
-	apiCompanyRoutes.HandleFunc("/{id}/update", api.EditCompany).Methods("POST")
+	apiCompanyRoutes.HandleFunc("/{id}/update", api.EditCompany).Methods("PATCH")
+	apiCompanyRoutes.HandleFunc("/{id}/delete", api.DeleteCompany).Methods("DELETE")
 
 	port := os.Getenv("port")
 	if port == "" {
