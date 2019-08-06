@@ -153,6 +153,28 @@ func GetCompany(companyId, userId uuid.UUID) *Company {
 	return company
 }
 
+func GetUniqueSlug(companyId uuid.UUID, slug string) (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+	companies := &[]Company{}
+
+	db := GetDB()
+	db.Raw("SELECT * FROM companies C WHERE C.id <> ? AND C.slug = ?", companyId, slug).Scan(companies)
+	defer db.Close()
+
+	message := "The slug is still available."
+	isUniqueSlug := true
+	if len(*companies) > 0 {
+		message = "The slug has been taken."
+		isUniqueSlug = false
+	}
+
+	resp = util.Message(true, http.StatusOK, message, errors)
+	resp["is_unique"] = isUniqueSlug
+	
+	return resp
+}
+
 // The database transaction to create company
 func CreateCompanyTransaction(user User, company *Company) error {
 	db := GetDB()

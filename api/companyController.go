@@ -176,3 +176,21 @@ var DeleteCompany = func(w http.ResponseWriter, r *http.Request) {
 	
 	util.Respond(w, resp)
 }
+
+var GetUniqueSlug = func(w http.ResponseWriter, r *http.Request) {
+	compQuery, ok := r.URL.Query()["comp"]
+	companyId := uuid.Nil
+	if ok && len(compQuery[0]) >= 1 {
+		companyId, _ = uuid.FromString(compQuery[0])
+	}
+
+	slugQuery, ok := r.URL.Query()["slug"]
+	slug := ""
+	if ok && len(slugQuery[0]) >= 1 {
+		slug = slugQuery[0]
+	}
+
+	resp := models.GetUniqueSlug(companyId, slug)
+	
+	util.Respond(w, resp)
+}

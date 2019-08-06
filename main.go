@@ -42,6 +42,7 @@ func main() {
 	apiCompanyRoutes := apiAuthenticatedRoutes.PathPrefix("/company").Subrouter()
 	apiCompanyRoutes.HandleFunc("/index", api.IndexCompany).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/store", api.CreateCompany).Methods("POST")
+	apiCompanyRoutes.HandleFunc("/getUniqueSlug", api.GetUniqueSlug).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/show", api.ShowCompany).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/update", api.EditCompany).Methods("PATCH")
 	apiCompanyRoutes.HandleFunc("/{id}/delete", api.DeleteCompany).Methods("DELETE")
