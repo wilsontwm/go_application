@@ -125,6 +125,25 @@ var UploadPicture = func(w http.ResponseWriter, r *http.Request) {
 	util.Respond(w, resp)
 }
 
+var DeletePicture = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	userId := r.Context().Value("user") . (uuid.UUID)
+
+	user := models.GetUser(userId)
+
+	if user == nil {
+		resp := util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		util.Respond(w, resp)
+		return
+	}
+
+	// Save the data into database
+	user.ProfilePicture = ""
+	resp := user.DeletePicture()
+	
+	util.Respond(w, resp)
+}
+
 var EditPassword = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
 	userId := r.Context().Value("user") . (uuid.UUID)

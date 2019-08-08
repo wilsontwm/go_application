@@ -286,6 +286,22 @@ func (user *User) UploadPicture() (map[string] interface{}) {
 	return resp
 }
 
+func (user *User) DeletePicture() (map[string] interface{}) {
+	var errors []string
+
+	db := GetDB()
+	db.Model(&user).Update(map[string]interface{}{
+		"ProfilePicture": user.ProfilePicture,
+	})
+
+	defer db.Close()
+
+	resp := util.Message(true, http.StatusOK, "Successfully removed profile picture.", errors)		
+	resp["data"] = user
+
+	return resp
+}
+
 func (user *User) EditPassword() (map[string] interface{}) {
 	var errors []string
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)

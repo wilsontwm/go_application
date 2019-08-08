@@ -37,7 +37,8 @@ func main() {
 	apiProfileRoutes.HandleFunc("/edit", api.EditProfile).Methods("POST")
 	apiProfileRoutes.HandleFunc("/edit/password", api.EditPassword).Methods("POST")
 	apiProfileRoutes.HandleFunc("/upload/picture", api.UploadPicture).Methods("POST")
-
+	apiProfileRoutes.HandleFunc("/delete/picture", api.DeletePicture).Methods("POST")
+	
 	// Company routes
 	apiCompanyRoutes := apiAuthenticatedRoutes.PathPrefix("/company").Subrouter()
 	apiCompanyRoutes.HandleFunc("/index", api.IndexCompany).Methods("GET")
