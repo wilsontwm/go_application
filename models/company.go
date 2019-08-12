@@ -26,7 +26,7 @@ type CompanyResult struct {
 	Name string
 	CompanyID uuid.UUID
 	IsAdmin bool
-  }
+}
 
 // Validate the incoming details for creation of company
 func (company *Company) Validate() (map[string] interface{}, bool) {
@@ -135,6 +135,36 @@ func (company *Company) DeleteCompany() (map[string] interface{}) {
 	defer db.Close()
 
 	resp = util.Message(true, http.StatusOK, "You have successfully deleted the company.", errors)
+
+	return resp
+}
+
+func (company *Company) InviteToCompany(email string) (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+
+	db := GetDB()
+	// Check if email is already an user in the company for non-soft deleted
+	companyUser := CompanyUser{}
+	db.Raw("SELECT user_id, company_id, role_id FROM company_users CU JOIN users U ON U.id = CU.user_id WHERE U.email = ?", email).Scan(&companyUser)
+	
+	companyInvitationRequest := CompanyInvitationRequest{}
+	db.Table("company_invitation_requests").Where("company_id = ? and email = ?", company.ID, email).First(&companyInvitationRequest)
+
+	// If email is not in the company and not in the invitation list, create the invitation
+	if(companyUser.UserID == uuid.Nil && companyInvitationRequest.Email == "") {
+		companyInvitationRequest := CompanyInvitationRequest{
+			CompanyID: company.ID,
+			Email: email,
+		}
+
+		db.Create(&companyInvitationRequest)
+		resp = util.Message(true, http.StatusOK, "You have successfully invited " + email + " to the company.", errors)
+	} else {
+		resp = util.Message(false, http.StatusOK, "The user with the email " + email + " is already part of the company.", errors)
+	}
+
+	defer db.Close()
 
 	return resp
 }

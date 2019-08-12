@@ -1,6 +1,7 @@
 package api
 
 import (
+	"strings"
 	"net/http"
 	"github.com/gorilla/mux"
 	util "app/utils"
@@ -18,6 +19,10 @@ type CompanyInput struct {
 	Phone string `json:"phone"`
 	Fax string `json:"fax"`
 	Address string `json:"address"`
+}
+
+type CompanyInvitationInput struct {
+	Emails []string `json:"emails"`
 }
 
 var IndexCompany = func(w http.ResponseWriter, r *http.Request) {
@@ -173,6 +178,69 @@ var DeleteCompany = func(w http.ResponseWriter, r *http.Request) {
 	} 
 	
 	resp := company.DeleteCompany()
+	
+	util.Respond(w, resp)
+}
+
+var InviteToCompany = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	var resp map[string] interface{}
+	userId := r.Context().Value("user") . (uuid.UUID)
+
+	user := models.GetUser(userId)
+
+	// Get the ID of the company passed in via URL
+	vars := mux.Vars(r)
+	companyId, _ := uuid.FromString(vars["id"]) 
+	company := models.GetCompany(companyId, userId) 
+
+	if user == nil || company == nil  {
+		resp = util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		util.Respond(w, resp)
+		return
+	} 
+
+	input := CompanyInvitationInput{}
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		errors = append(errors, err.Error())
+		util.Respond(w, util.Message(false, http.StatusInternalServerError, "Error decoding request body", errors))
+		return
+	}
+
+	emails := util.GetUniqueValues(input.Emails)
+
+	// Create channel to receive the result
+	c := make(chan string)
+	// Loop through the emails to check if the email can be invited
+	for _, email := range emails {
+		// Send the 
+		go func(emailInput string, channel chan<- string) {
+			result := company.InviteToCompany(emailInput)
+			// signal that the routine has completed
+			if(result["success"].(bool)) {
+				channel <- emailInput 
+			} else {
+				channel <- ""			}
+        }(email, c)
+	}
+
+	// Gather the result
+	var successfulEmails []string
+	for i := 0; i < len(emails) ; i++ {
+        successfulEmail := <-c
+        if successfulEmail != "" {
+			successfulEmails = append(successfulEmails, successfulEmail)
+		}
+	}
+
+	if len(successfulEmails) > 0 {
+		emails := strings.Join(successfulEmails, ", ")
+		resp = util.Message(true, http.StatusOK, "You have successfully invited " + emails + " to the company.", errors)
+		resp["emails"] = successfulEmails
+	} else {
+		resp = util.Message(false, http.StatusOK, "No emails have been invited to the company. Please ensure that the emails are not part of the company already or have not been invited before.", errors)
+	}
 	
 	util.Respond(w, resp)
 }

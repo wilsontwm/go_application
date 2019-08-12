@@ -1,6 +1,7 @@
 package utils
 
 import (	
+	"strings"
 	"net/http"
 	"reflect"
 	"encoding/json"
@@ -67,4 +68,17 @@ func MergeMapString(mp1 map[string]interface{}, mp2 map[string]interface{}) (res
 	}
 	
 	return result;
+}
+
+func GetUniqueValues(values []string) (result []string) {
+	hashMap := make(map[string]bool)
+	for _, ele := range values {
+		value := strings.TrimSpace(ele)
+		if _, ok := hashMap[value]; !ok && len(value) > 0 {
+			hashMap[value] = true
+			result = append(result, value)
+		}
+	}
+
+	return result
 }

@@ -53,6 +53,7 @@ func migrateDatabase() {
 		&Company{},
 		&Role{},
 		&CompanyUser{},
+		&CompanyInvitationRequest{},
 	) 
 
 	// Add foreign key
@@ -60,6 +61,8 @@ func migrateDatabase() {
 	db.Model(&CompanyUser{}).AddForeignKey("company_id", "companies(id)", "CASCADE", "RESTRICT")
 	db.Model(&CompanyUser{}).AddForeignKey("user_id", "users(id)", "CASCADE", "RESTRICT")
 	db.Model(&CompanyUser{}).AddForeignKey("role_id", "roles(id)", "RESTRICT", "RESTRICT")
+	db.Model(&CompanyInvitationRequest{}).AddForeignKey("company_id", "companies(id)", "CASCADE", "RESTRICT")
+	db.Model(&CompanyInvitationRequest{}).AddForeignKey("user_id", "users(id)", "SET NULL", "RESTRICT")
 
 	// Add index
 
