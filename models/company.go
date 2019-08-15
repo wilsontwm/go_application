@@ -160,6 +160,7 @@ func (company *Company) InviteToCompany(email string) (map[string] interface{}) 
 
 		db.Create(&companyInvitationRequest)
 		resp = util.Message(true, http.StatusOK, "You have successfully invited " + email + " to the company.", errors)
+		resp["data"] = companyInvitationRequest
 	} else {
 		resp = util.Message(false, http.StatusOK, "The user with the email " + email + " is already part of the company.", errors)
 	}

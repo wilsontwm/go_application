@@ -211,36 +211,42 @@ var InviteToCompany = func(w http.ResponseWriter, r *http.Request) {
 	emails := util.GetUniqueValues(input.Emails)
 
 	// Create channel to receive the result
-	c := make(chan string)
+	c := make(chan models.CompanyInvitationRequest)
 	// Loop through the emails to check if the email can be invited
 	for _, email := range emails {
 		// Send the 
-		go func(emailInput string, channel chan<- string) {
+		go func(emailInput string, channel chan<- models.CompanyInvitationRequest) {
 			result := company.InviteToCompany(emailInput)
 			// signal that the routine has completed
 			if(result["success"].(bool)) {
-				channel <- emailInput 
+				channel <- result["data"].(models.CompanyInvitationRequest)
 			} else {
-				channel <- ""			}
+				empty := models.CompanyInvitationRequest{}
+				channel <- empty
+			}
         }(email, c)
 	}
 
 	// Gather the result
-	var successfulEmails []string
+	var successfulEmails []interface{}
+	var successfulEmailString []string
 	for i := 0; i < len(emails) ; i++ {
         successfulEmail := <-c
-        if successfulEmail != "" {
+        if successfulEmail.Email != "" {
 			successfulEmails = append(successfulEmails, successfulEmail)
+			successfulEmailString = append(successfulEmailString, successfulEmail.Email)
 		}
 	}
 
 	if len(successfulEmails) > 0 {
-		emails := strings.Join(successfulEmails, ", ")
+		emails := strings.Join(successfulEmailString, ", ")
 		resp = util.Message(true, http.StatusOK, "You have successfully invited " + emails + " to the company.", errors)
 		resp["emails"] = successfulEmails
 	} else {
 		resp = util.Message(false, http.StatusOK, "No emails have been invited to the company. Please ensure that the emails are not part of the company already or have not been invited before.", errors)
 	}
+
+	resp["company"] = company.Name
 	
 	util.Respond(w, resp)
 }
