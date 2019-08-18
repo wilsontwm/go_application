@@ -211,27 +211,37 @@ var InviteToCompany = func(w http.ResponseWriter, r *http.Request) {
 	emails := util.GetUniqueValues(input.Emails)
 
 	// Create channel to receive the result
-	c := make(chan models.CompanyInvitationRequest)
+	const noOfEmailWorkers int = 10 // Have 10 goroutines to get the emails
+	emailJobs := make(chan string, len(emails))
+	invitation := make(chan models.CompanyInvitationRequest, len(emails))
+
+	for w := 1; w <= noOfEmailWorkers; w++ {
+		go func(id int, emailJobs <-chan string, results chan<- models.CompanyInvitationRequest) {
+			for emailInput := range emailJobs {
+				result := company.InviteToCompany(emailInput)
+				// signal that the routine has completed
+				if(result["success"].(bool)) {
+					results <- result["data"].(models.CompanyInvitationRequest)
+				} else {
+					empty := models.CompanyInvitationRequest{}
+					results <- empty
+				}
+			}
+		} (w, emailJobs, invitation)
+	}
+
 	// Loop through the emails to check if the email can be invited
 	for _, email := range emails {
-		// Send the 
-		go func(emailInput string, channel chan<- models.CompanyInvitationRequest) {
-			result := company.InviteToCompany(emailInput)
-			// signal that the routine has completed
-			if(result["success"].(bool)) {
-				channel <- result["data"].(models.CompanyInvitationRequest)
-			} else {
-				empty := models.CompanyInvitationRequest{}
-				channel <- empty
-			}
-        }(email, c)
+		// Send the email to the email jobs
+		emailJobs <- email
 	}
+	close(emailJobs)
 
 	// Gather the result
 	var successfulEmails []interface{}
 	var successfulEmailString []string
 	for i := 0; i < len(emails) ; i++ {
-        successfulEmail := <-c
+        successfulEmail := <-invitation
         if successfulEmail.Email != "" {
 			successfulEmails = append(successfulEmails, successfulEmail)
 			successfulEmailString = append(successfulEmailString, successfulEmail.Email)
