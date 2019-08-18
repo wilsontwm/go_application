@@ -170,6 +170,34 @@ func (company *Company) InviteToCompany(email string) (map[string] interface{}) 
 	return resp
 }
 
+func (company *Company) GetCompanyInvitationList(page int) (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+	const resultsPerPage int = 25
+
+	db := GetDB()
+	companyInvitationRequests := []CompanyInvitationRequest{}
+
+	if page <= 0 {
+		db.Where("company_id = ?", company.ID).Order("created_at desc").Find(&companyInvitationRequests)
+	} else {
+		offset := resultsPerPage * page
+		db.Where("company_id = ?", company.ID).Order("created_at desc").Offset(offset).Limit(resultsPerPage).Find(&companyInvitationRequests)
+	}
+
+	defer db.Close()
+	
+	message := "You have successfully retrieved the invited emails to the company."
+	if len(companyInvitationRequests) == 0 {
+		message = "No more results."
+	}
+
+	resp = util.Message(true, http.StatusOK, message, errors)
+	resp["data"] = companyInvitationRequests
+
+	return resp
+}
+
 func GetCompany(companyId, userId uuid.UUID) *Company {
 	// Only retrieve the company if user is in current company
 	company := &Company{}

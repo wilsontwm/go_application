@@ -2,6 +2,7 @@ package api
 
 import (
 	"strings"
+	"strconv"
 	"net/http"
 	"github.com/gorilla/mux"
 	util "app/utils"
@@ -32,7 +33,7 @@ var IndexCompany = func(w http.ResponseWriter, r *http.Request) {
 	user := models.GetUser(userId)
 
 	if user == nil {
-		resp := util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
 		util.Respond(w, resp)
 		return
 	}
@@ -49,7 +50,7 @@ var CreateCompany = func(w http.ResponseWriter, r *http.Request) {
 	user := models.GetUser(userId)
 
 	if user == nil {
-		resp := util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
 		util.Respond(w, resp)
 		return
 	}
@@ -95,7 +96,7 @@ var ShowCompany = func(w http.ResponseWriter, r *http.Request) {
 	user := models.GetUser(userId)
 
 	if user == nil {
-		resp := util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
 		util.Respond(w, resp)
 		return
 	}
@@ -123,7 +124,7 @@ var EditCompany = func(w http.ResponseWriter, r *http.Request) {
 	company := models.GetCompany(companyId, userId) 
 
 	if user == nil || company == nil  {
-		resp := util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
 		util.Respond(w, resp)
 		return
 	} 
@@ -172,7 +173,7 @@ var DeleteCompany = func(w http.ResponseWriter, r *http.Request) {
 	company := models.GetCompany(companyId, userId) 
 
 	if user == nil || company == nil  {
-		resp := util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
 		util.Respond(w, resp)
 		return
 	} 
@@ -195,7 +196,7 @@ var InviteToCompany = func(w http.ResponseWriter, r *http.Request) {
 	company := models.GetCompany(companyId, userId) 
 
 	if user == nil || company == nil  {
-		resp = util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		resp = util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
 		util.Respond(w, resp)
 		return
 	} 
@@ -258,6 +259,39 @@ var InviteToCompany = func(w http.ResponseWriter, r *http.Request) {
 
 	resp["company"] = company.Name
 	
+	util.Respond(w, resp)
+}
+
+var IndexInviteToCompany = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	var resp map[string] interface{}
+	userId := r.Context().Value("user") . (uuid.UUID)
+
+	user := models.GetUser(userId)
+
+	// Get the ID of the company passed in via URL
+	vars := mux.Vars(r)
+	companyId, _ := uuid.FromString(vars["id"]) 
+	company := models.GetCompany(companyId, userId) 
+
+	if user == nil || company == nil  {
+		resp = util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		util.Respond(w, resp)
+		return
+	} 
+
+	// Get the page passed in via URL
+	pageKeys, ok := r.URL.Query()["page"]
+	page := 0 // if page 0, then show all
+
+	if ok && len(pageKeys[0]) >= 1 {
+		if _, err := strconv.Atoi(pageKeys[0]); err == nil {
+			page, _ = strconv.Atoi(pageKeys[0])
+		}
+	}	
+	
+	resp = company.GetCompanyInvitationList(page)
+
 	util.Respond(w, resp)
 }
 
