@@ -181,7 +181,7 @@ func (company *Company) GetCompanyInvitationList(page int) (map[string] interfac
 	if page <= 0 {
 		db.Where("company_id = ?", company.ID).Order("created_at desc").Find(&companyInvitationRequests)
 	} else {
-		offset := resultsPerPage * page
+		offset := resultsPerPage * ( page - 1 )
 		db.Where("company_id = ?", company.ID).Order("created_at desc").Offset(offset).Limit(resultsPerPage).Find(&companyInvitationRequests)
 	}
 
