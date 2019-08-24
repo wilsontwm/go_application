@@ -1,7 +1,9 @@
 package models
 
 import (
+	util "app/utils"
 	"github.com/satori/go.uuid"
+	"net/http"
 )
 
 type CompanyInvitationRequest struct {
@@ -10,4 +12,23 @@ type CompanyInvitationRequest struct {
 	Email string `gorm:"not null;primary_key"`
 	UserID *uuid.UUID `gorm:"type:uuid"`
 	Status int `gorm:"default:'0'"`
+}
+
+func (invitation *CompanyInvitationRequest) GetInvitation(id, companyId uuid.UUID) (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+	
+	db := GetDB()
+	db.Raw("SELECT * FROM company_invitation_requests WHERE id = ? AND company_id = ? LIMIT 1", id, companyId).Scan(invitation)
+	defer db.Close()
+
+	if invitation.ID == uuid.Nil {
+		resp = util.Message(false, http.StatusUnprocessableEntity, "No available result.", errors)
+		return resp
+	}
+
+	resp = util.Message(true, http.StatusOK, "The invitation is retrieved.", errors)
+	resp["data"] = invitation
+
+	return resp
 }

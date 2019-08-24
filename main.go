@@ -47,8 +47,11 @@ func main() {
 	apiCompanyRoutes.HandleFunc("/{id}/show", api.ShowCompany).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/update", api.EditCompany).Methods("PATCH")
 	apiCompanyRoutes.HandleFunc("/{id}/delete", api.DeleteCompany).Methods("DELETE")
+
+	// Company invitation request routes
 	apiCompanyRoutes.HandleFunc("/{id}/invite", api.InviteToCompany).Methods("POST")
 	apiCompanyRoutes.HandleFunc("/{id}/invite/list", api.IndexInviteToCompany).Methods("GET")
+	apiCompanyRoutes.HandleFunc("/{id}/invite/{invitationID}", api.ShowCompanyInvitationRequest).Methods("GET")
 
 	port := os.Getenv("port")
 	if port == "" {
