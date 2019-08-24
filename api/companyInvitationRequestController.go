@@ -150,6 +150,34 @@ var ShowCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request) 
 	invitation := &models.CompanyInvitationRequest{}
 	resp = invitation.GetInvitation(invitationId, companyId)
 	resp["company"] = company
+
+	util.Respond(w, resp)
+}
+
+var DeleteCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	var resp map[string] interface{}
+	userId := r.Context().Value("user") . (uuid.UUID)
+
+	user := models.GetUser(userId)
+
+	// Get the ID of the company passed in via URL
+	vars := mux.Vars(r)
+	companyId, _ := uuid.FromString(vars["id"]) 
+	invitationId, _ := uuid.FromString(vars["invitationID"]) 
+
+	if user == nil {
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		util.Respond(w, resp)
+		return
+	} 
+
+	invitation := &models.CompanyInvitationRequest{}
+	resp = invitation.GetInvitation(invitationId, companyId)
+	if _, ok := resp["data"]; ok {
+		data := resp["data"] . (*models.CompanyInvitationRequest)
+		resp = data.DeleteInvitation()
+	}
 	
 	util.Respond(w, resp)
 }
