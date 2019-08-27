@@ -6,6 +6,7 @@ import (
 	util "app/utils"
 	"encoding/json"
 	"app/models"
+	"app/policy"
 	"gopkg.in/go-playground/validator.v9"
 	"github.com/satori/go.uuid"
 )
@@ -85,7 +86,18 @@ var CreateCompany = func(w http.ResponseWriter, r *http.Request) {
 
 var ShowCompany = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
-	userId := r.Context().Value("user") . (uuid.UUID)
+	userId := r.Context().Value("user") . (uuid.UUID)	
+
+	// Get the ID of the company passed in via URL
+	vars := mux.Vars(r)
+	companyId, _ := uuid.FromString(vars["id"]) 
+
+	// Authorization
+	if ok := policy.ShowCompany(userId, companyId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		util.Respond(w, resp)
+		return
+	}
 
 	user := models.GetUser(userId)
 
@@ -94,10 +106,6 @@ var ShowCompany = func(w http.ResponseWriter, r *http.Request) {
 		util.Respond(w, resp)
 		return
 	}
-
-	// Get the ID of the company passed in via URL
-	vars := mux.Vars(r)
-	companyId, _ := uuid.FromString(vars["id"]) 
 
 	company := &models.Company{}
 	
@@ -110,11 +118,18 @@ var EditCompany = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
 	userId := r.Context().Value("user") . (uuid.UUID)
 
-	user := models.GetUser(userId)
-
 	// Get the ID of the company passed in via URL
 	vars := mux.Vars(r)
 	companyId, _ := uuid.FromString(vars["id"]) 
+
+	// Authorization
+	if ok := policy.UpdateCompany(userId, companyId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		util.Respond(w, resp)
+		return
+	}
+
+	user := models.GetUser(userId)
 	company := models.GetCompany(companyId, userId) 
 
 	if user == nil || company == nil  {
@@ -159,11 +174,18 @@ var DeleteCompany = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
 	userId := r.Context().Value("user") . (uuid.UUID)
 
-	user := models.GetUser(userId)
-
 	// Get the ID of the company passed in via URL
 	vars := mux.Vars(r)
 	companyId, _ := uuid.FromString(vars["id"]) 
+
+	// Authorization
+	if ok := policy.UpdateCompany(userId, companyId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		util.Respond(w, resp)
+		return
+	}
+
+	user := models.GetUser(userId)
 	company := models.GetCompany(companyId, userId) 
 
 	if user == nil || company == nil  {

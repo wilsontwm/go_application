@@ -212,6 +212,19 @@ func GetCompany(companyId, userId uuid.UUID) *Company {
 	return company
 }
 
+func GetCompanyByID(id uuid.UUID) *Company {
+	comp := &Company{}
+	db := GetDB()
+	db.Table("companies").Where("id = ?", id).First(comp)
+	defer db.Close()
+	
+	if comp.ID == uuid.Nil {
+		return nil
+	}
+
+	return comp
+}
+
 func GetUniqueSlug(companyId uuid.UUID, slug string) (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
@@ -290,4 +303,4 @@ func CreateCompanyTransaction(user User, company *Company) error {
 	}
 	
 	return tx.Commit().Error
-  }
+}

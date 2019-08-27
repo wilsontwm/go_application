@@ -14,7 +14,7 @@ import (
 func main() {
 	err := godotenv.Load() //Load .env file
 	if err != nil {
-		log.Println("Error loading .env file", err)
+		log.Fatal("Error loading .env file", err)
 	}
 
 	router := mux.NewRouter()

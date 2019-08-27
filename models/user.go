@@ -319,6 +319,20 @@ func (user *User) EditPassword() (map[string] interface{}) {
 	return resp
 }
 
+// Return a flag to show if user is admin of a company
+func (user *User) IsAdmin(company *Company) bool {
+	result := CompanyResult{}
+	db := GetDB()
+	db.Raw("SELECT C.name, C.id as company_id, R.is_admin FROM companies C JOIN company_users CU ON CU.company_id = C.id JOIN roles R ON R.id = CU.role_id WHERE CU.user_id = ? AND CU.company_id = ? AND C.deleted_at is NULL ORDER BY C.name ASC", user.ID, company.ID).First(&result)
+	defer db.Close()
+	
+	if result.CompanyID == uuid.Nil {
+		return false
+	}
+
+	return result.IsAdmin
+}
+
 func getUser(user *User) *User {
 	if user.Email == "" {
 		return nil

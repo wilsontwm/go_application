@@ -8,6 +8,7 @@ import (
 	util "app/utils"
 	"encoding/json"
 	"app/models"
+	"app/policy"
 	"github.com/satori/go.uuid"
 )
 
@@ -20,11 +21,18 @@ var InviteToCompany = func(w http.ResponseWriter, r *http.Request) {
 	var resp map[string] interface{}
 	userId := r.Context().Value("user") . (uuid.UUID)
 
-	user := models.GetUser(userId)
-
 	// Get the ID of the company passed in via URL
 	vars := mux.Vars(r)
 	companyId, _ := uuid.FromString(vars["id"]) 
+
+	// Authorization
+	if ok := policy.CreateUpdateDeleteCompanyInvitation(userId, companyId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		util.Respond(w, resp)
+		return
+	}
+
+	user := models.GetUser(userId)
 	company := models.GetCompany(companyId, userId) 
 
 	if user == nil || company == nil  {
@@ -99,11 +107,18 @@ var IndexInviteToCompany = func(w http.ResponseWriter, r *http.Request) {
 	var resp map[string] interface{}
 	userId := r.Context().Value("user") . (uuid.UUID)
 
-	user := models.GetUser(userId)
-
 	// Get the ID of the company passed in via URL
 	vars := mux.Vars(r)
 	companyId, _ := uuid.FromString(vars["id"]) 
+
+	// Authorization
+	if ok := policy.CreateUpdateDeleteCompanyInvitation(userId, companyId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		util.Respond(w, resp)
+		return
+	}
+
+	user := models.GetUser(userId)
 	company := models.GetCompany(companyId, userId) 
 
 	if user == nil || company == nil  {
@@ -132,12 +147,18 @@ var ShowCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request) 
 	var resp map[string] interface{}
 
 	userId := r.Context().Value("user") . (uuid.UUID)
-
-	user := models.GetUser(userId)
-
 	// Get the ID of the company passed in via URL
 	vars := mux.Vars(r)
 	companyId, _ := uuid.FromString(vars["id"]) 
+
+	// Authorization
+	if ok := policy.ShowCompanyInvitation(userId, companyId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		util.Respond(w, resp)
+		return
+	}
+
+	user := models.GetUser(userId)
 	invitationId, _ := uuid.FromString(vars["invitationID"]) 
 	company := models.GetCompany(companyId, userId) 
 
@@ -158,12 +179,18 @@ var DeleteCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request
 	var errors []string
 	var resp map[string] interface{}
 	userId := r.Context().Value("user") . (uuid.UUID)
-
-	user := models.GetUser(userId)
-
 	// Get the ID of the company passed in via URL
 	vars := mux.Vars(r)
 	companyId, _ := uuid.FromString(vars["id"]) 
+	
+	// Authorization
+	if ok := policy.CreateUpdateDeleteCompanyInvitation(userId, companyId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		util.Respond(w, resp)
+		return
+	}
+
+	user := models.GetUser(userId)
 	invitationId, _ := uuid.FromString(vars["invitationID"]) 
 
 	if user == nil {
