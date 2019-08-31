@@ -209,17 +209,67 @@ var DeleteCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request
 	util.Respond(w, resp)
 }
 
-var JoinCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request) {
+// User gets all the invitation requests from all the companies
+var IndexInvitationFromCompany = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
 	var resp map[string] interface{}
 	userId := r.Context().Value("user") . (uuid.UUID)
-	// Get the ID of the company passed in via URL
-	vars := mux.Vars(r)
-	companyId, _ := uuid.FromString(vars["id"]) 
-	invitationId, _ := uuid.FromString(vars["invitationID"]) 
+	
+	user := models.GetUser(userId)
+
+	if user == nil {
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		util.Respond(w, resp)
+		return
+	} 
+	
+	resp = user.GetCompanyInvitationList()
+
+	util.Respond(w, resp)
+}
+
+// User gets the invitation request
+var ShowInvitationFromCompany = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	var resp map[string] interface{}
+	userId := r.Context().Value("user") . (uuid.UUID)
+	
+	// Get the ID of the invitation passed in via URL
+	vars := mux.Vars(r) 
+	invitationId, _ := uuid.FromString(vars["id"]) 
 	
 	// Authorization
-	if ok := policy.JoinCompanyInvitation(invitationId, userId, companyId); !ok {
+	if ok := policy.ShowInvitationFromCompany(userId, invitationId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		util.Respond(w, resp)
+		return
+	}
+
+	user := models.GetUser(userId)
+
+	if user == nil {
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		util.Respond(w, resp)
+		return
+	} 
+
+	invitation := models.CompanyInvitationRequest{}
+	resp = invitation.GetInvitationFromCompany(invitationId)
+
+	util.Respond(w, resp)
+}
+
+// User responds to the company invitation requests, whether to accept or decline invitation request
+var RespondCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	var resp map[string] interface{}
+	userId := r.Context().Value("user") . (uuid.UUID)
+	// Get the ID of the invitation passed in via URL
+	vars := mux.Vars(r) 
+	invitationId, _ := uuid.FromString(vars["id"]) 
+	
+	// Authorization
+	if ok := policy.RespondCompanyInvitation(invitationId, userId); !ok {
 		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
 		util.Respond(w, resp)
 		return
@@ -234,7 +284,7 @@ var JoinCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request) 
 	} 
 
 	invitation := models.GetCompanyInvitationRequest(invitationId)
-	resp = invitation.JoinCompanyInvitation(*user)
+	resp = invitation.RespondCompanyInvitation(*user)
 	
 	util.Respond(w, resp)
 }

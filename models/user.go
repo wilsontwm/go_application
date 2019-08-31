@@ -319,6 +319,23 @@ func (user *User) EditPassword() (map[string] interface{}) {
 	return resp
 }
 
+// Get the list of company invitation requests for the user
+func (user *User) GetCompanyInvitationList() (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+
+	companyInvitationRequests := []CompanyInvitationRequest{}
+
+	db := GetDB()
+	db.Where("email = ?", user.Email).Order("created_at desc").Find(&companyInvitationRequests)
+	defer db.Close()
+	
+	resp = util.Message(true, http.StatusOK, "You have successfully retrieved all the company invitation requests.", errors)
+	resp["data"] = companyInvitationRequests
+
+	return resp
+}
+
 // Return a flag to show if user is admin of a company
 func (user *User) IsAdmin(company *Company) bool {
 	result := CompanyResult{}
