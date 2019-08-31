@@ -208,3 +208,33 @@ var DeleteCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request
 	
 	util.Respond(w, resp)
 }
+
+var JoinCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	var resp map[string] interface{}
+	userId := r.Context().Value("user") . (uuid.UUID)
+	// Get the ID of the company passed in via URL
+	vars := mux.Vars(r)
+	companyId, _ := uuid.FromString(vars["id"]) 
+	invitationId, _ := uuid.FromString(vars["invitationID"]) 
+	
+	// Authorization
+	if ok := policy.JoinCompanyInvitation(invitationId, userId, companyId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		util.Respond(w, resp)
+		return
+	}
+
+	user := models.GetUser(userId)
+
+	if user == nil {
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		util.Respond(w, resp)
+		return
+	} 
+
+	invitation := models.GetCompanyInvitationRequest(invitationId)
+	resp = invitation.JoinCompanyInvitation(*user)
+	
+	util.Respond(w, resp)
+}

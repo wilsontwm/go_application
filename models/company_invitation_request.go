@@ -4,14 +4,21 @@ import (
 	util "app/utils"
 	"github.com/satori/go.uuid"
 	"net/http"
+	"errors"
 )
 
 type CompanyInvitationRequest struct {
 	Base
 	CompanyID uuid.UUID `gorm:"type:uuid;not null;primary_key"`
 	Email string `gorm:"not null;primary_key"`
-	UserID *uuid.UUID `gorm:"type:uuid"`
+	UserID uuid.UUID `gorm:"type:uuid"`
 	Status int `gorm:"default:'0'"`
+}
+
+var InvitationStatus = []string{
+	"Awaiting response",
+	"Joined",
+	"Declined",
 }
 
 func (invitation *CompanyInvitationRequest) GetInvitation(id, companyId uuid.UUID) (map[string] interface{}) {
@@ -44,4 +51,85 @@ func (invitation *CompanyInvitationRequest) DeleteInvitation() (map[string] inte
 	resp = util.Message(true, http.StatusOK, "You have successfully deleted the invitation request.", errors)
 
 	return resp
+}
+
+func (invitation *CompanyInvitationRequest) JoinCompanyInvitation(user User) (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+	
+	if err := invitation.JoinCompanyTransaction(user); err != nil {
+		resp = util.Message(false, http.StatusInternalServerError, err.Error(), errors)
+		return resp
+	}
+		
+	resp = util.Message(true, http.StatusOK, "You have successfully joined the company.", errors)
+	resp["data"] = invitation
+
+	return resp
+}
+
+
+func (invitation *CompanyInvitationRequest) JoinCompanyTransaction(user User) error {
+	db := GetDB()
+
+	defer db.Close()
+	// Note the use of tx as the database handle once you are within a transaction
+	tx := db.Begin()
+	
+	defer func() {
+	  if r := recover(); r != nil {
+		tx.Rollback()
+	  }
+	}()
+  
+	if err := tx.Error; err != nil {
+	  return err
+	}
+	
+	// Set the status to 1 (Joined) and the user ID
+	invitation.Status = 1
+	invitation.UserID = user.ID
+	
+	if err := tx.Save(invitation).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Get the user role ID in the company
+	userRole := Role{}
+	db.Where("company_id = ? AND is_admin = ?", invitation.CompanyID, false).First(&userRole)
+
+	if userRole.ID == uuid.Nil {
+		tx.Rollback()
+		err := errors.New("The user role is not created in the company.")
+		return err
+	}
+
+	// Associate the user to the company
+	companyUser := CompanyUser{
+		UserID: user.ID,
+		CompanyID: invitation.CompanyID,
+		RoleID: userRole.ID,
+	}
+
+	if err := tx.Create(&companyUser).Error; err != nil {
+	   tx.Rollback()
+	   return err
+	}
+	
+	return tx.Commit().Error
+}
+
+func GetCompanyInvitationRequest(invitationID uuid.UUID) *CompanyInvitationRequest {
+	// Get the invitation by ID
+	invitation := &CompanyInvitationRequest{}
+	db := GetDB()
+	db.Where("id = ?", invitationID).First(invitation)
+	defer db.Close()
+
+	if invitation.ID == uuid.Nil {
+		return nil
+	}
+
+	return invitation
 }

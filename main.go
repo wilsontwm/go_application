@@ -53,7 +53,8 @@ func main() {
 	apiCompanyRoutes.HandleFunc("/{id}/invite/list", api.IndexInviteToCompany).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/invite/{invitationID}", api.ShowCompanyInvitationRequest).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/invite/{invitationID}/delete", api.DeleteCompanyInvitationRequest).Methods("DELETE")
-
+	apiCompanyRoutes.HandleFunc("/{id}/invite/{invitationID}/join", api.JoinCompanyInvitationRequest).Methods("POST")
+	
 	port := os.Getenv("port")
 	if port == "" {
 		port = "8000"
