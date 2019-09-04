@@ -139,7 +139,7 @@ func (company *Company) DeleteCompany() (map[string] interface{}) {
 	return resp
 }
 
-func (company *Company) InviteToCompany(email string) (map[string] interface{}) {
+func (company *Company) InviteToCompany(email string, message string, senderId uuid.UUID) (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
 
@@ -156,6 +156,8 @@ func (company *Company) InviteToCompany(email string) (map[string] interface{}) 
 		companyInvitationRequest := CompanyInvitationRequest{
 			CompanyID: company.ID,
 			Email: email,
+			Message: message,
+			SenderID: &senderId,
 		}
 
 		db.Create(&companyInvitationRequest)

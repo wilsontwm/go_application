@@ -82,3 +82,12 @@ func GetUniqueValues(values []string) (result []string) {
 
 	return result
 }
+
+func IndexOf(element interface{}, array []interface{}) (int) {
+	for k, v := range array {
+		if element == v {
+			return k
+		}
+	}
+	return -1    //not found.
+ }

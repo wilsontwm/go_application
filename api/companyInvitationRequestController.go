@@ -14,8 +14,14 @@ import (
 
 type CompanyInvitationInput struct {
 	Emails []string `json:"emails"`
+	Message string `json:"message"`
 }
 
+type CompanyInvitationResponseInput struct {
+	IsJoin bool `json:"is_join"`
+}
+
+// Send invitation to emails to join company
 var InviteToCompany = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
 	var resp map[string] interface{}
@@ -50,6 +56,7 @@ var InviteToCompany = func(w http.ResponseWriter, r *http.Request) {
 	}
 
 	emails := util.GetUniqueValues(input.Emails)
+	message := input.Message
 
 	// Create channel to receive the result
 	const noOfEmailWorkers int = 10 // Have 10 goroutines to get the emails
@@ -59,7 +66,7 @@ var InviteToCompany = func(w http.ResponseWriter, r *http.Request) {
 	for w := 1; w <= noOfEmailWorkers; w++ {
 		go func(id int, emailJobs <-chan string, results chan<- models.CompanyInvitationRequest) {
 			for emailInput := range emailJobs {
-				result := company.InviteToCompany(emailInput)
+				result := company.InviteToCompany(emailInput, message, userId)
 				// signal that the routine has completed
 				if(result["success"].(bool)) {
 					results <- result["data"].(models.CompanyInvitationRequest)
@@ -102,6 +109,7 @@ var InviteToCompany = func(w http.ResponseWriter, r *http.Request) {
 	util.Respond(w, resp)
 }
 
+// Get a list of invited emails to the company
 var IndexInviteToCompany = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
 	var resp map[string] interface{}
@@ -142,6 +150,7 @@ var IndexInviteToCompany = func(w http.ResponseWriter, r *http.Request) {
 	util.Respond(w, resp)
 }
 
+// Show the company invitation request
 var ShowCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
 	var resp map[string] interface{}
@@ -175,6 +184,7 @@ var ShowCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request) 
 	util.Respond(w, resp)
 }
 
+// Delete the company invitation request
 var DeleteCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
 	var resp map[string] interface{}
@@ -283,7 +293,27 @@ var RespondCompanyInvitationRequest = func(w http.ResponseWriter, r *http.Reques
 		return
 	} 
 
+	input := CompanyInvitationResponseInput{}
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		errors = append(errors, err.Error())
+		util.Respond(w, util.Message(false, http.StatusInternalServerError, "Error decoding request body", errors))
+		return
+	}
+
 	invitation := models.GetCompanyInvitationRequest(invitationId)
+
+	invitationStatus := models.InvitationStatus
+	invitationInterface := make([]interface{}, len(invitationStatus))
+	for i, v := range invitationStatus {
+		invitationInterface[i] = v
+	}
+	
+	invitation.Status = util.IndexOf("Declined", invitationInterface)
+	if input.IsJoin == true {
+		invitation.Status = util.IndexOf("Joined", invitationInterface)
+	}
+
 	resp = invitation.RespondCompanyInvitation(*user)
 	
 	util.Respond(w, resp)

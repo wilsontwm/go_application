@@ -11,8 +11,16 @@ type CompanyInvitationRequest struct {
 	Base
 	CompanyID uuid.UUID `gorm:"type:uuid;not null;primary_key"`
 	Email string `gorm:"not null;primary_key"`
-	UserID uuid.UUID `gorm:"type:uuid"`
+	Message string 
+	SenderID *uuid.UUID `gorm:"type:uuid"`
 	Status int `gorm:"default:'0'"`
+	UserID *uuid.UUID `gorm:"type:uuid"`
+}
+
+type CompanyInvitationRequestOutput struct {
+	CompanyInvitationRequest
+	CompanyName string 
+	Timestamp string
 }
 
 var InvitationStatus = []string{
@@ -85,7 +93,7 @@ func (invitation *CompanyInvitationRequest) RespondCompanyInvitation(user User) 
 		return resp
 	}
 		
-	resp = util.Message(true, http.StatusOK, "You have successfully joined the company.", errors)
+	resp = util.Message(true, http.StatusOK, "You have successfully responded to the company invitation.", errors)
 	resp["data"] = invitation
 
 	return resp
@@ -109,35 +117,39 @@ func (invitation *CompanyInvitationRequest) RespondCompanyTransaction(user User)
 	  return err
 	}
 	
-	// Set the status to 1 (Joined) and the user ID
-	invitation.Status = 1
-	invitation.UserID = user.ID
+	// Set the user ID
+	if invitation.Status == 1 {	
+		invitation.UserID = &user.ID
+	}
 	
 	if err := tx.Save(invitation).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Get the user role ID in the company
-	userRole := Role{}
-	db.Where("company_id = ? AND is_admin = ?", invitation.CompanyID, false).First(&userRole)
-
-	if userRole.ID == uuid.Nil {
-		tx.Rollback()
-		err := errors.New("The user role is not created in the company.")
-		return err
-	}
-
-	// Associate the user to the company
-	companyUser := CompanyUser{
-		UserID: user.ID,
-		CompanyID: invitation.CompanyID,
-		RoleID: userRole.ID,
-	}
-
-	if err := tx.Where(companyUser).FirstOrCreate(&companyUser).Error; err != nil {
-	   tx.Rollback()
-	   return err
+	// Only create the company user if it's a join response
+	if invitation.Status == 1 {		
+		// Get the user role ID in the company
+		userRole := Role{}
+		db.Where("company_id = ? AND is_admin = ?", invitation.CompanyID, false).First(&userRole)
+	
+		if userRole.ID == uuid.Nil {
+			tx.Rollback()
+			err := errors.New("The user role is not created in the company.")
+			return err
+		}
+	
+		// Associate the user to the company
+		companyUser := CompanyUser{
+			UserID: user.ID,
+			CompanyID: invitation.CompanyID,
+			RoleID: userRole.ID,
+		}
+	
+		if err := tx.Where(companyUser).FirstOrCreate(&companyUser).Error; err != nil {
+		   tx.Rollback()
+		   return err
+		}
 	}
 	
 	return tx.Commit().Error
