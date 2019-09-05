@@ -329,7 +329,8 @@ func (user *User) GetCompanyInvitationList() (map[string] interface{}) {
 	db := GetDB()
 	db.Table("company_invitation_requests").
 	Joins("JOIN companies ON company_invitation_requests.company_id = companies.id").
-	Select("company_invitation_requests.*, companies.name as company_name, TO_CHAR(company_invitation_requests.created_at, 'dd/mm/yyyy') as timestamp").
+	Joins("JOIN users on company_invitation_requests.sender_id = users.id").
+	Select("company_invitation_requests.*, companies.name as company_name, users.name as sender_name, users.email as sender_email, TO_CHAR(company_invitation_requests.created_at, 'dd/mm/yyyy') as timestamp").
 	Where("company_invitation_requests.email = ?", user.Email).
 	Order("company_invitation_requests.created_at desc").
 	Find(&companyInvitationRequests)

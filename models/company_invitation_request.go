@@ -20,6 +20,8 @@ type CompanyInvitationRequest struct {
 type CompanyInvitationRequestOutput struct {
 	CompanyInvitationRequest
 	CompanyName string 
+	SenderName string
+	SenderEmail string
 	Timestamp string
 }
 
