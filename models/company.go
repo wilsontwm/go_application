@@ -101,7 +101,9 @@ func (company *Company) ShowCompany(id, userId uuid.UUID) (map[string] interface
 		resp = util.Message(false, http.StatusUnprocessableEntity, "No available result.", errors)
 	} else {		
 		resp = util.Message(true, http.StatusOK, "", errors)
+		user := GetUser(userId)
 		resp["data"] = company
+		resp["isAdmin"] = user.IsAdmin(company)
 	}
 	
 	return resp
