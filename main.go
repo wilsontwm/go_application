@@ -53,6 +53,7 @@ func main() {
 	apiCompanyRoutes.HandleFunc("/{id}/show", api.ShowCompany).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/update", api.EditCompany).Methods("PATCH")
 	apiCompanyRoutes.HandleFunc("/{id}/delete", api.DeleteCompany).Methods("DELETE")
+	apiCompanyRoutes.HandleFunc("/{id}/users", api.IndexCompanyUsers).Methods("GET")
 
 	// Company invitation request routes (outgoing)
 	apiCompanyRoutes.HandleFunc("/{id}/invite", api.InviteToCompany).Methods("POST")
