@@ -38,22 +38,27 @@ func main() {
 	apiProfileRoutes.HandleFunc("/edit/password", api.EditPassword).Methods("POST")
 	apiProfileRoutes.HandleFunc("/upload/picture", api.UploadPicture).Methods("POST")
 	apiProfileRoutes.HandleFunc("/delete/picture", api.DeletePicture).Methods("POST")
+
+	// Invitation routes (incoming)
+	apiInvitedRoutes := apiAuthenticatedRoutes.PathPrefix("/invite/incoming").Subrouter()
+	apiInvitedRoutes.HandleFunc("", api.IndexInvitationFromCompany).Methods("GET")
+	apiInvitedRoutes.HandleFunc("/{id}", api.ShowInvitationFromCompany).Methods("GET")
+	apiInvitedRoutes.HandleFunc("/{id}/respond", api.RespondCompanyInvitationRequest).Methods("POST")
 	
 	// Company routes
 	apiCompanyRoutes := apiAuthenticatedRoutes.PathPrefix("/company").Subrouter()
-	apiCompanyRoutes.HandleFunc("/index", api.IndexCompany).Methods("GET")
+	apiCompanyRoutes.HandleFunc("", api.IndexCompany).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/store", api.CreateCompany).Methods("POST")
 	apiCompanyRoutes.HandleFunc("/getUniqueSlug", api.GetUniqueSlug).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/show", api.ShowCompany).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/update", api.EditCompany).Methods("PATCH")
 	apiCompanyRoutes.HandleFunc("/{id}/delete", api.DeleteCompany).Methods("DELETE")
 
-	// Company invitation request routes
+	// Company invitation request routes (outgoing)
 	apiCompanyRoutes.HandleFunc("/{id}/invite", api.InviteToCompany).Methods("POST")
 	apiCompanyRoutes.HandleFunc("/{id}/invite/list", api.IndexInviteToCompany).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/invite/{invitationID}", api.ShowCompanyInvitationRequest).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/invite/{invitationID}/delete", api.DeleteCompanyInvitationRequest).Methods("DELETE")
-	apiCompanyRoutes.HandleFunc("/{id}/invite/{invitationID}/join", api.JoinCompanyInvitationRequest).Methods("POST")
 	
 	port := os.Getenv("port")
 	if port == "" {

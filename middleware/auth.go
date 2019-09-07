@@ -9,7 +9,6 @@ import (
 	"context"
 	util "app/utils"
 	"app/models"
-	"fmt"
 	"time"
 )
 
@@ -71,9 +70,6 @@ var JwtAuthentication = func() mux.MiddlewareFunc {
 				util.Respond(w, response)
 				return
 			}
-	
-			// Everything is authenticated
-			fmt.Sprintf("Login User: %s", tk.UserId)
 
 			// Set the user ID in the context
 			ctx := context.WithValue(r.Context(), "user", tk.UserId)

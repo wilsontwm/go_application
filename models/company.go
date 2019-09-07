@@ -101,7 +101,9 @@ func (company *Company) ShowCompany(id, userId uuid.UUID) (map[string] interface
 		resp = util.Message(false, http.StatusUnprocessableEntity, "No available result.", errors)
 	} else {		
 		resp = util.Message(true, http.StatusOK, "", errors)
+		user := GetUser(userId)
 		resp["data"] = company
+		resp["isAdmin"] = user.IsAdmin(company)
 	}
 	
 	return resp
@@ -139,7 +141,7 @@ func (company *Company) DeleteCompany() (map[string] interface{}) {
 	return resp
 }
 
-func (company *Company) InviteToCompany(email string) (map[string] interface{}) {
+func (company *Company) InviteToCompany(email string, message string, senderId uuid.UUID) (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
 
@@ -156,6 +158,8 @@ func (company *Company) InviteToCompany(email string) (map[string] interface{}) 
 		companyInvitationRequest := CompanyInvitationRequest{
 			CompanyID: company.ID,
 			Email: email,
+			Message: message,
+			SenderID: &senderId,
 		}
 
 		db.Create(&companyInvitationRequest)

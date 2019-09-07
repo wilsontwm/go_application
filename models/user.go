@@ -26,21 +26,21 @@ type Token struct {
 
 type User struct {
 	Base
-	Name string `json:"name";gorm:"not null"`
-	Email string `json:"email";gorm:"unique;not null"`
-	Password string `json:"password";gorm:"not null"`
+	Name string `json:"name" gorm:"not null"`
+	Email string `json:"email" gorm:"unique;not null"`
+	Password string `json:"password" gorm:"not null"`
 	ProfilePicture string `json:"profilePicture"`
-	Token string `json:"token";sql:"-"`
+	Token string `json:"token" sql:"-"`
 	ActivationCode *string `json:"activationCode"`
 	ResetPasswordCode *string `json:"resetPasswordCode"`
 	ResetPasswordExpiryDT *time.Time `json:"resetPasswordExpiryDateTime"`
 	Phone string `json:"phone"`
 	City string `json:"city"`
-	Country int `json:"country";gorm:"default:'0'"`
-	Gender int `json:"gender";gorm:"default:'0'"`
+	Country int `json:"country" gorm:"default:'0'"`
+	Gender int `json:"gender" gorm:"default:'0'"`
 	Birthday *time.Time `json:"birthday"`
-	BirthdayString string `json:"birthdayString";sql:"-"`
-	Bio string `json:"bio";sql:"type:text"`
+	BirthdayString string `json:"birthdayString" sql:"-"`
+	Bio string `json:"bio" sql:"type:text"`
 	CompanyUsers []CompanyUser `gorm:"foreignkey:UserID"`
 }
 
@@ -315,6 +315,30 @@ func (user *User) EditPassword() (map[string] interface{}) {
 	defer db.Close()
 
 	resp := util.Message(true, http.StatusOK, "Successfully updated password.", errors)	
+
+	return resp
+}
+
+// Get the list of company invitation requests for the user
+func (user *User) GetCompanyInvitationList() (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+
+	companyInvitationRequests := []CompanyInvitationRequestOutput{}
+
+	db := GetDB()
+	db.Table("company_invitation_requests").
+	Joins("JOIN companies ON company_invitation_requests.company_id = companies.id").
+	Joins("JOIN users on company_invitation_requests.sender_id = users.id").
+	Select("company_invitation_requests.*, companies.name as company_name, users.name as sender_name, users.email as sender_email, TO_CHAR(company_invitation_requests.created_at, 'dd/mm/yyyy') as timestamp").
+	Where("company_invitation_requests.email = ?", user.Email).
+	Order("company_invitation_requests.created_at desc").
+	Find(&companyInvitationRequests)
+
+	defer db.Close()
+
+	resp = util.Message(true, http.StatusOK, "You have successfully retrieved all the company invitation requests.", errors)
+	resp["data"] = companyInvitationRequests
 
 	return resp
 }
