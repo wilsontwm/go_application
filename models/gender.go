@@ -16,7 +16,7 @@ func init() {
 	}
 
 	for i, s := range sexes {
-		gender := CreateGender(i+1, s)
+		gender := CreateGender(i, s)
 
 		genders = append(genders, *gender)
 	}

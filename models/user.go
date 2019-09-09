@@ -30,7 +30,7 @@ type User struct {
 	Email string `json:"email" gorm:"unique;not null"`
 	Password string `json:"password" gorm:"not null"`
 	ProfilePicture string `json:"profilePicture"`
-	Token string `json:"token" sql:"-"`
+	Token string `json:"token" gorm:"-"`
 	ActivationCode *string `json:"activationCode"`
 	ResetPasswordCode *string `json:"resetPasswordCode"`
 	ResetPasswordExpiryDT *time.Time `json:"resetPasswordExpiryDateTime"`
@@ -39,7 +39,7 @@ type User struct {
 	Country int `json:"country" gorm:"default:'0'"`
 	Gender int `json:"gender" gorm:"default:'0'"`
 	Birthday *time.Time `json:"birthday"`
-	BirthdayString string `json:"birthdayString" sql:"-"`
+	BirthdayString string `json:"birthday_string" gorm:"-"`
 	Bio string `json:"bio" sql:"type:text"`
 	CompanyUsers []CompanyUser `gorm:"foreignkey:UserID"`
 }
@@ -330,7 +330,7 @@ func (user *User) GetCompanyInvitationList() (map[string] interface{}) {
 	db.Table("company_invitation_requests").
 	Joins("JOIN companies ON company_invitation_requests.company_id = companies.id").
 	Joins("JOIN users on company_invitation_requests.sender_id = users.id").
-	Select("company_invitation_requests.*, companies.name as company_name, users.name as sender_name, users.email as sender_email, TO_CHAR(company_invitation_requests.created_at, 'dd/mm/yyyy') as timestamp").
+	Select("company_invitation_requests.*, companies.name as company_name, users.name as sender_name, users.email as sender_email, TO_CHAR(company_invitation_requests.created_at, '" + util.DateSQLFormat + "') as timestamp").
 	Where("company_invitation_requests.email = ?", user.Email).
 	Order("company_invitation_requests.created_at desc").
 	Find(&companyInvitationRequests)
@@ -363,9 +363,6 @@ func getUser(user *User) *User {
 	}
 
 	user.Password = ""
-	if(user.Birthday != nil) {
-		user.BirthdayString = user.Birthday.Format(formattedDate)
-	}
 
 	return user
 }
@@ -373,7 +370,10 @@ func getUser(user *User) *User {
 func GetUserByEmail(email string) *User {
 	user := &User{}
 	db := GetDB()
-	db.Table("users").Where("email = ?", email).First(user)
+	db.Table("users").
+	Select("users.*, TO_CHAR(users.birthday, '" + util.DateSQLFormat + "') as birthday_string").
+	Where("email = ?", email).
+	First(user)
 	defer db.Close()
 
 	return getUser(user)
@@ -382,7 +382,10 @@ func GetUserByEmail(email string) *User {
 func GetUserByActivationCode(activationCode string) *User {
 	user := &User{}
 	db := GetDB()
-	db.Table("users").Where("activation_code = ?", activationCode).First(user)
+	db.Table("users").
+	Select("users.*, TO_CHAR(users.birthday, '" + util.DateSQLFormat + "') as birthday_string").
+	Where("activation_code = ?", activationCode).
+	First(user)
 	defer db.Close()
 	
 	return getUser(user)
@@ -392,7 +395,11 @@ func GetUserByResetPasswordCode(resetPasswordCode string) *User {
 	user := &User{}
 	now := time.Now().Local()
 	db := GetDB()
-	db.Table("users").Where("reset_password_code = ?", resetPasswordCode).Where("reset_password_expiry_dt > ?", now).First(user)
+	db.Table("users").
+	Select("users.*, TO_CHAR(users.birthday, '" + util.DateSQLFormat + "') as birthday_string").
+	Where("reset_password_code = ?", resetPasswordCode).
+	Where("reset_password_expiry_dt > ?", now).
+	First(user)
 	defer db.Close()
 	
 	return getUser(user)
@@ -401,7 +408,10 @@ func GetUserByResetPasswordCode(resetPasswordCode string) *User {
 func GetUser(u uuid.UUID) *User {
 	user := &User{}
 	db := GetDB()
-	db.Table("users").Where("id = ?", u).First(user)
+	db.Table("users").
+	Select("users.*, TO_CHAR(users.birthday, '" + util.DateSQLFormat + "') as birthday_string").
+	Where("id = ?", u).
+	First(user)
 	defer db.Close()
 	
 	return getUser(user)

@@ -154,7 +154,7 @@ func (company *Company) InviteToCompany(email string, message string, senderId u
 	db := GetDB()
 	// Check if email is already an user in the company for non-soft deleted
 	companyUser := CompanyUser{}
-	db.Raw("SELECT user_id, company_id, role_id FROM company_users CU JOIN users U ON U.id = CU.user_id WHERE U.email = ?", email).Scan(&companyUser)
+	db.Raw("SELECT user_id, company_id, role_id FROM company_users CU JOIN users U ON U.id = CU.user_id WHERE U.email = ? AND CU.company_id = ?", email, company.ID).Scan(&companyUser)
 	
 	companyInvitationRequest := CompanyInvitationRequest{}
 	db.Table("company_invitation_requests").Where("company_id = ? and email = ?", company.ID, email).First(&companyInvitationRequest)
@@ -221,7 +221,7 @@ func (company *Company) GetUserList(page int) (map[string] interface{}) {
 	if page <= 0 {
 		db.Table("users").
 		Joins("JOIN company_users on company_users.user_id = users.id").
-		Select("users.*").
+		Select("users.name, users.email, users.id, users.profile_picture").
 		Where("company_users.company_id = ?", company.ID).
 		Order("users.name asc").
 		Find(&users)
@@ -229,7 +229,7 @@ func (company *Company) GetUserList(page int) (map[string] interface{}) {
 		offset := resultsPerPage * ( page - 1 )
 		db.Table("users").
 		Joins("JOIN company_users on company_users.user_id = users.id").
-		Select("users.*").
+		Select("users.name, users.email, users.id, users.profile_picture").
 		Where("company_users.company_id = ?", company.ID).
 		Order("users.name asc").
 		Offset(offset).
