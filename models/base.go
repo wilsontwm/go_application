@@ -56,16 +56,15 @@ func migrateDatabase() {
 		&CompanyInvitationRequest{},
 	) 
 
-	// Add foreign key
+	// Migration scripts
 	db.Model(&Role{}).AddForeignKey("company_id", "companies(id)", "CASCADE", "RESTRICT")
 	db.Model(&CompanyUser{}).AddForeignKey("company_id", "companies(id)", "CASCADE", "RESTRICT")
 	db.Model(&CompanyUser{}).AddForeignKey("user_id", "users(id)", "CASCADE", "RESTRICT")
 	db.Model(&CompanyUser{}).AddForeignKey("role_id", "roles(id)", "RESTRICT", "RESTRICT")
 	db.Model(&CompanyInvitationRequest{}).AddForeignKey("company_id", "companies(id)", "CASCADE", "RESTRICT")
 	db.Model(&CompanyInvitationRequest{}).AddForeignKey("user_id", "users(id)", "SET NULL", "RESTRICT")
-
-	// Add index
-
+	db.Model(&User{}).DropColumn("birthday_string")
+	db.Model(&User{}).DropColumn("token")
 }
 
 func GetDB() *gorm.DB {
