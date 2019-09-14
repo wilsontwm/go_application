@@ -55,6 +55,7 @@ func (company *Company) Validate() (map[string] interface{}, bool) {
 	return resp, true
 }
 
+// Get a list of the companies
 func (user User) IndexCompany() (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
@@ -71,6 +72,7 @@ func (user User) IndexCompany() (map[string] interface{}) {
 	return resp
 }
 
+// Create the company
 func (user User) CreateCompany(company *Company) (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
@@ -91,6 +93,7 @@ func (user User) CreateCompany(company *Company) (map[string] interface{}) {
 	return resp
 }
 
+// Get the company
 func (company *Company) ShowCompany(id, userId uuid.UUID) (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
@@ -109,6 +112,7 @@ func (company *Company) ShowCompany(id, userId uuid.UUID) (map[string] interface
 	return resp
 }
 
+// Update the company
 func (company *Company) EditCompany() (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
@@ -128,6 +132,7 @@ func (company *Company) EditCompany() (map[string] interface{}) {
 	return resp
 }
 
+// Delete the company
 func (company *Company) DeleteCompany() (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
@@ -141,6 +146,7 @@ func (company *Company) DeleteCompany() (map[string] interface{}) {
 	return resp
 }
 
+// Send the invitation to emails to join the company
 func (company *Company) InviteToCompany(email string, message string, senderId uuid.UUID) (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
@@ -148,7 +154,7 @@ func (company *Company) InviteToCompany(email string, message string, senderId u
 	db := GetDB()
 	// Check if email is already an user in the company for non-soft deleted
 	companyUser := CompanyUser{}
-	db.Raw("SELECT user_id, company_id, role_id FROM company_users CU JOIN users U ON U.id = CU.user_id WHERE U.email = ?", email).Scan(&companyUser)
+	db.Raw("SELECT user_id, company_id, role_id FROM company_users CU JOIN users U ON U.id = CU.user_id WHERE U.email = ? AND CU.company_id = ?", email, company.ID).Scan(&companyUser)
 	
 	companyInvitationRequest := CompanyInvitationRequest{}
 	db.Table("company_invitation_requests").Where("company_id = ? and email = ?", company.ID, email).First(&companyInvitationRequest)
@@ -174,6 +180,7 @@ func (company *Company) InviteToCompany(email string, message string, senderId u
 	return resp
 }
 
+// Get the company invitation list of the company
 func (company *Company) GetCompanyInvitationList(page int) (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
@@ -202,6 +209,48 @@ func (company *Company) GetCompanyInvitationList(page int) (map[string] interfac
 	return resp
 }
 
+// Get the users in the company
+func (company *Company) GetUserList(page int) (map[string] interface{}) {
+	var errors []string
+	var resp map[string] interface{}
+	const resultsPerPage int = 25
+
+	db := GetDB()
+	users := []User{}
+
+	if page <= 0 {
+		db.Table("users").
+		Joins("JOIN company_users on company_users.user_id = users.id").
+		Select("users.name, users.email, users.id, users.profile_picture").
+		Where("company_users.company_id = ?", company.ID).
+		Order("users.name asc").
+		Find(&users)
+	} else {
+		offset := resultsPerPage * ( page - 1 )
+		db.Table("users").
+		Joins("JOIN company_users on company_users.user_id = users.id").
+		Select("users.name, users.email, users.id, users.profile_picture").
+		Where("company_users.company_id = ?", company.ID).
+		Order("users.name asc").
+		Offset(offset).
+		Limit(resultsPerPage).
+		Find(&users)
+	}
+
+	defer db.Close()
+	
+	message := "You have successfully retrieved the users of the company."
+	if len(users) == 0 {
+		message = "No more results."
+	}
+
+	resp = util.Message(true, http.StatusOK, message, errors)
+	resp["data"] = users
+
+	return resp
+}
+
+// Return the company if the user belongs to the company
 func GetCompany(companyId, userId uuid.UUID) *Company {
 	// Only retrieve the company if user is in current company
 	company := &Company{}
@@ -216,6 +265,7 @@ func GetCompany(companyId, userId uuid.UUID) *Company {
 	return company
 }
 
+// Get the company based on ID
 func GetCompanyByID(id uuid.UUID) *Company {
 	comp := &Company{}
 	db := GetDB()
@@ -229,6 +279,7 @@ func GetCompanyByID(id uuid.UUID) *Company {
 	return comp
 }
 
+// Get the unique slug/URL for the company name
 func GetUniqueSlug(companyId uuid.UUID, slug string) (map[string] interface{}) {
 	var errors []string
 	var resp map[string] interface{}
