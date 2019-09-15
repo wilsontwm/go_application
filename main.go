@@ -60,6 +60,10 @@ func main() {
 	apiCompanyRoutes.HandleFunc("/{id}/invite/list", api.IndexInviteToCompany).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/invite/{invitationID}", api.ShowCompanyInvitationRequest).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/invite/{invitationID}/delete", api.DeleteCompanyInvitationRequest).Methods("DELETE")
+
+	// User routes
+	apiUserRoutes := apiAuthenticatedRoutes.PathPrefix("/user").Subrouter()
+	apiUserRoutes.HandleFunc("/{id}", api.GetUserProfile).Methods("GET")
 	
 	port := os.Getenv("port")
 	if port == "" {
