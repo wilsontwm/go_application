@@ -1,17 +1,17 @@
 package models
 
 import (
-	"github.com/dgrijalva/jwt-go"
-	"github.com/satori/go.uuid"
 	util "app/utils"
-	"fmt"
-	"net/http"
-	"github.com/jinzhu/gorm"
-	"golang.org/x/crypto/bcrypt"
 	"crypto/md5"
 	"encoding/hex"
-	"time"
+	"fmt"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/jinzhu/gorm"
+	"github.com/satori/go.uuid"
+	"golang.org/x/crypto/bcrypt"
+	"net/http"
 	"os"
+	"time"
 )
 
 const (
@@ -26,32 +26,33 @@ type Token struct {
 
 type User struct {
 	Base
-	Name string `json:"name" gorm:"not null"`
-	Email string `json:"email" gorm:"unique;not null"`
-	Password string `json:"password" gorm:"not null"`
-	ProfilePicture string `json:"profilePicture"`
-	Token string `json:"token" sql:"-"`
-	ActivationCode *string `json:"activationCode"`
-	ResetPasswordCode *string `json:"resetPasswordCode"`
-	ResetPasswordExpiryDT *time.Time `json:"resetPasswordExpiryDateTime"`
-	Phone string `json:"phone"`
-	City string `json:"city"`
-	Country int `json:"country" gorm:"default:'0'"`
-	Gender int `json:"gender" gorm:"default:'0'"`
-	Birthday *time.Time `json:"birthday"`
-	BirthdayString string `json:"birthdayString" sql:"-"`
-	Bio string `json:"bio" sql:"type:text"`
-	CompanyUsers []CompanyUser `gorm:"foreignkey:UserID"`
+	Name                  string        `json:"name" gorm:"not null"`
+	Email                 string        `json:"email" gorm:"unique;not null"`
+	Password              string        `json:"password" gorm:"not null"`
+	ProfilePicture        string        `json:"profilePicture"`
+	Token                 string        `json:"token" sql:"-"`
+	ActivationCode        *string       `json:"activationCode"`
+	ResetPasswordCode     *string       `json:"resetPasswordCode"`
+	ResetPasswordExpiryDT *time.Time    `json:"resetPasswordExpiryDateTime"`
+	Phone                 string        `json:"phone"`
+	City                  string        `json:"city"`
+	Country               int           `json:"country" gorm:"default:'0'"`
+	Gender                int           `json:"gender" gorm:"default:'0'"`
+	Birthday              *time.Time    `json:"birthday"`
+	BirthdayString        string        `json:"birthdayString" sql:"-"`
+	Bio                   string        `json:"bio" sql:"type:text"`
+	CompanyUsers          []CompanyUser `gorm:"foreignkey:UserID"`
+	UserTopics            []UserTopic   `gorm:"foreignkey:UserID"`
 }
 
-func (user *User) Login(email string, password string) (map[string] interface{}) {
+func (user *User) Login(email string, password string) map[string]interface{} {
 	var errors []string
-	var resp map[string] interface{}
-	
+	var resp map[string]interface{}
+
 	// Get the user by email
 	db := GetDB()
 	db.Table("users").Where("email = ?", email).First(&user)
-	
+
 	defer db.Close()
 
 	if user.Email == "" {
@@ -81,10 +82,10 @@ func (user *User) Login(email string, password string) (map[string] interface{})
 }
 
 // Validate the incoming details for signup
-func (user *User) ValidateSignup() (map[string] interface{}, bool) {
+func (user *User) ValidateSignup() (map[string]interface{}, bool) {
 	var errors []string
-	var resp map[string] interface{}
-	
+	var resp map[string]interface{}
+
 	// Email must be unique
 	temp := &User{}
 
@@ -108,12 +109,12 @@ func (user *User) ValidateSignup() (map[string] interface{}, bool) {
 	return resp, true
 }
 
-func (user *User) Create() (map[string] interface{}) {
+func (user *User) Create() map[string]interface{} {
 	var errors []string
 
 	// Validate the account first
 	if resp, ok := user.ValidateSignup(); !ok {
-		return resp;
+		return resp
 	}
 
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
@@ -123,19 +124,18 @@ func (user *User) Create() (map[string] interface{}) {
 	db := GetDB()
 	db.Create(user)
 
-
 	if user.ID == uuid.Nil {
 		resp := util.Message(false, http.StatusInternalServerError, "Failed to create account, connection error.", errors)
-		return resp;
+		return resp
 	}
 
 	// Store the activation code to the user
 	hash := md5.New()
-	hash.Write([]byte(fmt.Sprint(user.ID)))	
+	hash.Write([]byte(fmt.Sprint(user.ID)))
 	activationCode := hex.EncodeToString(hash.Sum(nil))
-	
+
 	db.Model(&user).Update("ActivationCode", activationCode)
-	
+
 	defer db.Close()
 
 	user.Password = "" // delete the password
@@ -146,28 +146,28 @@ func (user *User) Create() (map[string] interface{}) {
 	return resp
 }
 
-func (user *User) ResendActivation() (map[string] interface{}) {
+func (user *User) ResendActivation() map[string]interface{} {
 	var errors []string
-	var resp map[string] interface{}
+	var resp map[string]interface{}
 
 	// Get the user by email
 	user = GetUserByEmail(user.Email)
-	
+
 	if user == nil {
 		resp = util.Message(false, http.StatusUnprocessableEntity, "Invalid email address.", errors)
 	} else if user.ActivationCode == nil {
 		resp = util.Message(false, http.StatusUnprocessableEntity, "The account has already been activated.", errors)
 	} else {
-		resp = util.Message(true, http.StatusOK, "The activation link has been emailed to you. Please check your inbox.", errors)		
+		resp = util.Message(true, http.StatusOK, "The activation link has been emailed to you. Please check your inbox.", errors)
 		resp["data"] = user
 	}
 
 	return resp
 }
 
-func (user *User) ForgetPassword() (map[string] interface{}) {
+func (user *User) ForgetPassword() map[string]interface{} {
 	var errors []string
-	var resp map[string] interface{}
+	var resp map[string]interface{}
 
 	// Get the user by email
 	user = GetUserByEmail(user.Email)
@@ -179,98 +179,98 @@ func (user *User) ForgetPassword() (map[string] interface{}) {
 	} else {
 		// Store the reset password code to the user
 		hash := md5.New()
-		hash.Write([]byte(fmt.Sprint(user.ID) + time.Now().String()))	
+		hash.Write([]byte(fmt.Sprint(user.ID) + time.Now().String()))
 		resetPasswordCode := hex.EncodeToString(hash.Sum(nil))
 		// Add one hour to the expiry date for reseting the password
 		resetPasswordExpiryDT := time.Now().Local().Add(time.Hour * 1)
-		
+
 		db := GetDB()
 		db.Model(&user).Update(map[string]interface{}{
-			"ResetPasswordCode": resetPasswordCode,
+			"ResetPasswordCode":     resetPasswordCode,
 			"ResetPasswordExpiryDT": resetPasswordExpiryDT,
 		})
 
 		defer db.Close()
-		
-		resp = util.Message(true, http.StatusOK, "An email to reset password has been sent to you. Please check your inbox.", errors)		
+
+		resp = util.Message(true, http.StatusOK, "An email to reset password has been sent to you. Please check your inbox.", errors)
 		resp["data"] = user
 	}
 
 	return resp
 }
 
-func (user *User) ActivateAccount(code string) (map[string] interface{}) {
+func (user *User) ActivateAccount(code string) map[string]interface{} {
 	var errors []string
-	var resp map[string] interface{}
-	
+	var resp map[string]interface{}
+
 	// Get the user by activation code
 	user = GetUserByActivationCode(code)
-	
+
 	if user == nil {
 		resp = util.Message(false, http.StatusUnprocessableEntity, "Invalid activation link.", errors)
 	} else {
 		// Reset the activation code of the user
-		db := GetDB()		
+		db := GetDB()
 		db.Model(&user).Update("ActivationCode", nil)
-		
+
 		defer db.Close()
-		
-		resp = util.Message(true, http.StatusOK, "Thank you for signing up. Your account has been activated.", errors)	
+
+		resp = util.Message(true, http.StatusOK, "Thank you for signing up. Your account has been activated.", errors)
 	}
 
 	return resp
 }
 
-func (user *User) ResetPassword(code string, password string) (map[string] interface{}) {
+func (user *User) ResetPassword(code string, password string) map[string]interface{} {
 	var errors []string
-	var resp map[string] interface{}
-	
+	var resp map[string]interface{}
+
 	// Get the user by reset password code
 	user = GetUserByResetPasswordCode(code)
-	
+
 	if user == nil {
 		resp = util.Message(false, http.StatusUnprocessableEntity, "Invalid/expired reset password link.", errors)
 	} else {
-		// Reset the password of the user	
-		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)	
+		// Reset the password of the user
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		db := GetDB()
 		db.Model(&user).Update(map[string]interface{}{
-			"ResetPasswordCode": nil, 
+			"ResetPasswordCode":     nil,
 			"ResetPasswordExpiryDT": nil,
-			"Password": string(hashedPassword), 
+			"Password":              string(hashedPassword),
 		})
 
 		defer db.Close()
-		
-		resp = util.Message(true, http.StatusOK, "Successfully reset the password.", errors)	
+
+		resp = util.Message(true, http.StatusOK, "Successfully reset the password.", errors)
 	}
 
 	return resp
 }
 
-func (user *User) EditProfile() (map[string] interface{}) {
+func (user *User) EditProfile() map[string]interface{} {
 	var errors []string
 
 	db := GetDB()
 	db.Model(&user).Update(map[string]interface{}{
-		"Name": user.Name,
-		"Phone": user.Phone,
-		"City": user.City,
-		"Country": user.Country,
-		"Gender": user.Gender,
+		"Name":     user.Name,
+		"Phone":    user.Phone,
+		"City":     user.City,
+		"Country":  user.Country,
+		"Gender":   user.Gender,
 		"Birthday": user.Birthday,
-		"Bio": user.Bio,
+		"Bio":      user.Bio,
 	})
 
 	defer db.Close()
 
-	resp := util.Message(true, http.StatusOK, "Successfully updated profile.", errors)		
+	resp := util.Message(true, http.StatusOK, "Successfully updated profile.", errors)
 	resp["data"] = user
 
 	return resp
 }
 
-func (user *User) UploadPicture() (map[string] interface{}) {
+func (user *User) UploadPicture() map[string]interface{} {
 	var errors []string
 
 	db := GetDB()
@@ -280,13 +280,13 @@ func (user *User) UploadPicture() (map[string] interface{}) {
 
 	defer db.Close()
 
-	resp := util.Message(true, http.StatusOK, "Successfully uploaded profile picture.", errors)		
+	resp := util.Message(true, http.StatusOK, "Successfully uploaded profile picture.", errors)
 	resp["data"] = user
 
 	return resp
 }
 
-func (user *User) DeletePicture() (map[string] interface{}) {
+func (user *User) DeletePicture() map[string]interface{} {
 	var errors []string
 
 	db := GetDB()
@@ -296,13 +296,13 @@ func (user *User) DeletePicture() (map[string] interface{}) {
 
 	defer db.Close()
 
-	resp := util.Message(true, http.StatusOK, "Successfully removed profile picture.", errors)		
+	resp := util.Message(true, http.StatusOK, "Successfully removed profile picture.", errors)
 	resp["data"] = user
 
 	return resp
 }
 
-func (user *User) EditPassword() (map[string] interface{}) {
+func (user *User) EditPassword() map[string]interface{} {
 	var errors []string
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	password := string(hashedPassword)
@@ -314,26 +314,26 @@ func (user *User) EditPassword() (map[string] interface{}) {
 
 	defer db.Close()
 
-	resp := util.Message(true, http.StatusOK, "Successfully updated password.", errors)	
+	resp := util.Message(true, http.StatusOK, "Successfully updated password.", errors)
 
 	return resp
 }
 
 // Get the list of company invitation requests for the user
-func (user *User) GetCompanyInvitationList() (map[string] interface{}) {
+func (user *User) GetCompanyInvitationList() map[string]interface{} {
 	var errors []string
-	var resp map[string] interface{}
+	var resp map[string]interface{}
 
 	companyInvitationRequests := []CompanyInvitationRequestOutput{}
 
 	db := GetDB()
 	db.Table("company_invitation_requests").
-	Joins("JOIN companies ON company_invitation_requests.company_id = companies.id").
-	Joins("JOIN users on company_invitation_requests.sender_id = users.id").
-	Select("company_invitation_requests.*, companies.name as company_name, users.name as sender_name, users.email as sender_email, TO_CHAR(company_invitation_requests.created_at, 'dd/mm/yyyy') as timestamp").
-	Where("company_invitation_requests.email = ?", user.Email).
-	Order("company_invitation_requests.created_at desc").
-	Find(&companyInvitationRequests)
+		Joins("JOIN companies ON company_invitation_requests.company_id = companies.id").
+		Joins("JOIN users on company_invitation_requests.sender_id = users.id").
+		Select("company_invitation_requests.*, companies.name as company_name, users.name as sender_name, users.email as sender_email, TO_CHAR(company_invitation_requests.created_at, 'dd/mm/yyyy') as timestamp").
+		Where("company_invitation_requests.email = ?", user.Email).
+		Order("company_invitation_requests.created_at desc").
+		Find(&companyInvitationRequests)
 
 	defer db.Close()
 
@@ -349,7 +349,7 @@ func (user *User) IsAdmin(company *Company) bool {
 	db := GetDB()
 	db.Raw("SELECT C.name, C.id as company_id, R.is_admin FROM companies C JOIN company_users CU ON CU.company_id = C.id JOIN roles R ON R.id = CU.role_id WHERE CU.user_id = ? AND CU.company_id = ? AND C.deleted_at is NULL ORDER BY C.name ASC", user.ID, company.ID).First(&result)
 	defer db.Close()
-	
+
 	if result.CompanyID == uuid.Nil {
 		return false
 	}
@@ -363,7 +363,7 @@ func getUser(user *User) *User {
 	}
 
 	user.Password = ""
-	if(user.Birthday != nil) {
+	if user.Birthday != nil {
 		user.BirthdayString = user.Birthday.Format(formattedDate)
 	}
 
@@ -384,7 +384,7 @@ func GetUserByActivationCode(activationCode string) *User {
 	db := GetDB()
 	db.Table("users").Where("activation_code = ?", activationCode).First(user)
 	defer db.Close()
-	
+
 	return getUser(user)
 }
 
@@ -394,7 +394,7 @@ func GetUserByResetPasswordCode(resetPasswordCode string) *User {
 	db := GetDB()
 	db.Table("users").Where("reset_password_code = ?", resetPasswordCode).Where("reset_password_expiry_dt > ?", now).First(user)
 	defer db.Close()
-	
+
 	return getUser(user)
 }
 
@@ -403,6 +403,6 @@ func GetUser(u uuid.UUID) *User {
 	db := GetDB()
 	db.Table("users").Where("id = ?", u).First(user)
 	defer db.Close()
-	
+
 	return getUser(user)
 }

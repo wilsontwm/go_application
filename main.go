@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
-	"log"
-	"os"
-	"github.com/joho/godotenv"
-	"net/http"
 	"app/api"
 	"app/middleware"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
+	"log"
+	"net/http"
+	"os"
 )
 
 func main() {
@@ -44,7 +44,7 @@ func main() {
 	apiInvitedRoutes.HandleFunc("", api.IndexInvitationFromCompany).Methods("GET")
 	apiInvitedRoutes.HandleFunc("/{id}", api.ShowInvitationFromCompany).Methods("GET")
 	apiInvitedRoutes.HandleFunc("/{id}/respond", api.RespondCompanyInvitationRequest).Methods("POST")
-	
+
 	// Company routes
 	apiCompanyRoutes := apiAuthenticatedRoutes.PathPrefix("/company").Subrouter()
 	apiCompanyRoutes.HandleFunc("", api.IndexCompany).Methods("GET")
@@ -59,7 +59,11 @@ func main() {
 	apiCompanyRoutes.HandleFunc("/{id}/invite/list", api.IndexInviteToCompany).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/invite/{invitationID}", api.ShowCompanyInvitationRequest).Methods("GET")
 	apiCompanyRoutes.HandleFunc("/{id}/invite/{invitationID}/delete", api.DeleteCompanyInvitationRequest).Methods("DELETE")
-	
+
+	// Chat routes
+	apiRoutes.HandleFunc("/chat", api.AddChat).Methods("POST")
+	apiRoutes.HandleFunc("/chat_test", api.ChatTest).Methods("GET")
+
 	port := os.Getenv("port")
 	if port == "" {
 		port = "8000"
@@ -70,5 +74,5 @@ func main() {
 	headers := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
 	methods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"})
 	origins := handlers.AllowedOrigins([]string{"*"})
-	log.Fatal(http.ListenAndServe(":" + port, handlers.CORS(headers, methods, origins)(router)))
+	log.Fatal(http.ListenAndServe(":"+port, handlers.CORS(headers, methods, origins)(router)))
 }
