@@ -1,54 +1,54 @@
 package api
 
 import (
-	"net/http"
-	"strconv"
-	"github.com/gorilla/mux"
-	util "app/utils"
-	"encoding/json"
 	"app/models"
 	"app/policy"
-	"gopkg.in/go-playground/validator.v9"
+	util "app/utils"
+	"encoding/json"
+	"github.com/gorilla/mux"
 	"github.com/satori/go.uuid"
+	"gopkg.in/go-playground/validator.v9"
+	"net/http"
+	"strconv"
 )
 
 type CompanyInput struct {
-	Name string `json:"name" validate:"required"`
-	Slug string `json:"slug" validate:"required"`
+	Name        string `json:"name" validate:"required"`
+	Slug        string `json:"slug" validate:"required"`
 	Description string `json:"description"`
-	Email string `json:"email"`
-	Phone string `json:"phone"`
-	Fax string `json:"fax"`
-	Address string `json:"address"`
+	Email       string `json:"email"`
+	Phone       string `json:"phone"`
+	Fax         string `json:"fax"`
+	Address     string `json:"address"`
 }
 
 // Get a list of companies
 var IndexCompany = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
-	userId := r.Context().Value("user") . (uuid.UUID)
+	userId := r.Context().Value("user").(uuid.UUID)
 
 	user := models.GetUser(userId)
 
 	if user == nil {
-		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)
 		util.Respond(w, resp)
 		return
 	}
-	
+
 	resp := user.IndexCompany()
-	
+
 	util.Respond(w, resp)
 }
 
 // Create a new company and become admin of the newly created company
 var CreateCompany = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
-	userId := r.Context().Value("user") . (uuid.UUID)
+	userId := r.Context().Value("user").(uuid.UUID)
 
 	user := models.GetUser(userId)
 
 	if user == nil {
-		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)
 		util.Respond(w, resp)
 		return
 	}
@@ -66,39 +66,39 @@ var CreateCompany = func(w http.ResponseWriter, r *http.Request) {
 	err = validate.Struct(input)
 	if err != nil {
 		util.GetErrorMessages(&errors, err)
-		
+
 		resp := util.Message(false, http.StatusUnprocessableEntity, "Validation error", errors)
 		util.Respond(w, resp)
 		return
 	}
 
 	company := models.Company{
-		Name: input.Name,
-		Slug: input.Slug,
+		Name:        input.Name,
+		Slug:        input.Slug,
 		Description: input.Description,
-		Email: input.Email,
-		Phone: input.Phone,
-		Fax: input.Fax,
-		Address: input.Address,
+		Email:       input.Email,
+		Phone:       input.Phone,
+		Fax:         input.Fax,
+		Address:     input.Address,
 	}
-	
+
 	resp := user.CreateCompany(&company)
-	
+
 	util.Respond(w, resp)
 }
 
 // Get the detail of the company
 var ShowCompany = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
-	userId := r.Context().Value("user") . (uuid.UUID)	
+	userId := r.Context().Value("user").(uuid.UUID)
 
 	// Get the ID of the company passed in via URL
 	vars := mux.Vars(r)
-	companyId, _ := uuid.FromString(vars["id"]) 
+	companyId, _ := uuid.FromString(vars["id"])
 
 	// Authorization
 	if ok := policy.ShowCompany(userId, companyId); !ok {
-		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)
 		util.Respond(w, resp)
 		return
 	}
@@ -106,42 +106,42 @@ var ShowCompany = func(w http.ResponseWriter, r *http.Request) {
 	user := models.GetUser(userId)
 
 	if user == nil {
-		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)
 		util.Respond(w, resp)
 		return
 	}
 
 	company := &models.Company{}
-	
+
 	resp := company.ShowCompany(companyId, userId)
-	
+
 	util.Respond(w, resp)
 }
 
 // Update the company
 var EditCompany = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
-	userId := r.Context().Value("user") . (uuid.UUID)
+	userId := r.Context().Value("user").(uuid.UUID)
 
 	// Get the ID of the company passed in via URL
 	vars := mux.Vars(r)
-	companyId, _ := uuid.FromString(vars["id"]) 
+	companyId, _ := uuid.FromString(vars["id"])
 
 	// Authorization
 	if ok := policy.UpdateCompany(userId, companyId); !ok {
-		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)
 		util.Respond(w, resp)
 		return
 	}
 
 	user := models.GetUser(userId)
-	company := models.GetCompany(companyId, userId) 
+	company := models.GetCompany(companyId, userId)
 
-	if user == nil || company == nil  {
-		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+	if user == nil || company == nil {
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)
 		util.Respond(w, resp)
 		return
-	} 
+	}
 
 	input := CompanyInput{}
 	err := json.NewDecoder(r.Body).Decode(&input)
@@ -156,7 +156,7 @@ var EditCompany = func(w http.ResponseWriter, r *http.Request) {
 	err = validate.Struct(input)
 	if err != nil {
 		util.GetErrorMessages(&errors, err)
-		
+
 		resp := util.Message(false, http.StatusUnprocessableEntity, "Validation error", errors)
 		util.Respond(w, resp)
 		return
@@ -169,39 +169,39 @@ var EditCompany = func(w http.ResponseWriter, r *http.Request) {
 	company.Phone = input.Phone
 	company.Fax = input.Fax
 	company.Address = input.Address
-	
+
 	resp := company.EditCompany()
-	
+
 	util.Respond(w, resp)
 }
 
 // Delete the company
 var DeleteCompany = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
-	userId := r.Context().Value("user") . (uuid.UUID)
+	userId := r.Context().Value("user").(uuid.UUID)
 
 	// Get the ID of the company passed in via URL
 	vars := mux.Vars(r)
-	companyId, _ := uuid.FromString(vars["id"]) 
+	companyId, _ := uuid.FromString(vars["id"])
 
 	// Authorization
 	if ok := policy.UpdateCompany(userId, companyId); !ok {
-		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)
 		util.Respond(w, resp)
 		return
 	}
 
 	user := models.GetUser(userId)
-	company := models.GetCompany(companyId, userId) 
+	company := models.GetCompany(companyId, userId)
 
-	if user == nil || company == nil  {
-		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+	if user == nil || company == nil {
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)
 		util.Respond(w, resp)
 		return
-	} 
-	
+	}
+
 	resp := company.DeleteCompany()
-	
+
 	util.Respond(w, resp)
 }
 
@@ -220,22 +220,22 @@ var GetUniqueSlug = func(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := models.GetUniqueSlug(companyId, slug)
-	
+
 	util.Respond(w, resp)
 }
 
 // Get the users in the company
 var IndexCompanyUsers = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string
-	userId := r.Context().Value("user") . (uuid.UUID)
+	userId := r.Context().Value("user").(uuid.UUID)
 
 	// Get the ID of the company passed in via URL
 	vars := mux.Vars(r)
-	companyId, _ := uuid.FromString(vars["id"]) 
+	companyId, _ := uuid.FromString(vars["id"])
 
 	// Authorization
 	if ok := policy.ViewCompanyUsers(userId, companyId); !ok {
-		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)	
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)
 		util.Respond(w, resp)
 		return
 	}
@@ -248,10 +248,40 @@ var IndexCompanyUsers = func(w http.ResponseWriter, r *http.Request) {
 		if _, err := strconv.Atoi(pageKeys[0]); err == nil {
 			page, _ = strconv.Atoi(pageKeys[0])
 		}
-	}	
-	
+	}
+
 	company := models.GetCompanyByID(companyId)
 	resp := company.GetUserList(page)
-	
+
+	util.Respond(w, resp)
+}
+
+// Update the last visit timestamp at the company
+var VisitCompany = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	userId := r.Context().Value("user").(uuid.UUID)
+
+	// Get the ID of the company passed in via URL
+	vars := mux.Vars(r)
+	companyId, _ := uuid.FromString(vars["id"])
+
+	// Authorization
+	if ok := policy.VisitCompany(userId, companyId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)
+		util.Respond(w, resp)
+		return
+	}
+
+	user := models.GetUser(userId)
+	company := models.GetCompany(companyId, userId)
+
+	if user == nil || company == nil {
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)
+		util.Respond(w, resp)
+		return
+	}
+
+	resp := user.SelectCompany(company)
+
 	util.Respond(w, resp)
 }
