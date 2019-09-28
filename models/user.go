@@ -369,7 +369,8 @@ func (user *User) SelectCompany(company *Company) map[string]interface{} {
 
 	defer db.Close()
 
-	resp = util.Message(true, http.StatusOK, "Last visit timestamp at "+company.Name+" has been updated.", errors)
+	resp = util.Message(true, http.StatusOK, company.Name+" has been selected.", errors)
+	resp["selectedCompany"] = &company
 	return resp
 }
 
