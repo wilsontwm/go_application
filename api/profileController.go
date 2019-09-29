@@ -38,7 +38,7 @@ var GetProfile = func(w http.ResponseWriter, r *http.Request) {
 	user := models.GetUser(userId)
 
 	if user == nil {
-		resp := util.Message(true, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)	
 		util.Respond(w, resp)
 		return
 	}

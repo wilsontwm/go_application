@@ -26,3 +26,11 @@ func ViewCompanyUsers(userId, companyId uuid.UUID) bool {
 
 	return company != nil
 }
+
+// Check if the user can visit the company
+func VisitCompany(userId, companyId uuid.UUID) bool {
+	// Check if the user belongs to the company
+	company := models.GetCompany(companyId, userId)
+
+	return company != nil
+}
