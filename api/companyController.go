@@ -256,6 +256,34 @@ var IndexCompanyUsers = func(w http.ResponseWriter, r *http.Request) {
 	util.Respond(w, resp)
 }
 
+// Search the users by email or name in the company
+var SearchCompanyUsers = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	userId := r.Context().Value("user").(uuid.UUID)
+
+	// Get the ID of the company passed in via URL
+	vars := mux.Vars(r)
+	companyId, _ := uuid.FromString(vars["id"])
+
+	// Authorization
+	if ok := policy.ViewCompanyUsers(userId, companyId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)
+		util.Respond(w, resp)
+		return
+	}
+
+	// Get the page passed in via URL
+	queryStrings, ok := r.URL.Query()["query"]
+	query := ""
+	if ok {
+		query = queryStrings[0]
+	}
+
+	resp := models.SearchUsers(companyId, query)
+
+	util.Respond(w, resp)
+}
+
 // Update the last visit timestamp at the company
 var VisitCompany = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string

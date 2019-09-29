@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -371,6 +372,27 @@ func (user *User) SelectCompany(company *Company) map[string]interface{} {
 
 	resp = util.Message(true, http.StatusOK, company.Name+" has been selected.", errors)
 	resp["selectedCompany"] = &company
+	return resp
+}
+
+func SearchUsers(companyId uuid.UUID, query string) map[string]interface{} {
+	var errors []string
+	var resp map[string]interface{}
+
+	// Get all the users that have email or name like query
+	users := []User{}
+	query = "%" + strings.ToLower(query) + "%"
+
+	db := GetDB()
+	db.Table("users").
+		Joins("JOIN company_users ON company_users.user_id = users.id").
+		Select("users.*").
+		Where("company_users.company_id = ? AND ( lower(users.name) LIKE ? OR lower(users.email) LIKE ?)", companyId, query, query).
+		Find(&users)
+	defer db.Close()
+
+	resp = util.Message(true, http.StatusOK, "Search users process completes.", errors)
+	resp["data"] = users
 	return resp
 }
 
