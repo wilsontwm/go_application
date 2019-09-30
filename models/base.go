@@ -1,14 +1,14 @@
 package models
 
 import (
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/jinzhu/gorm"
-	"github.com/satori/go.uuid"
-	"os"
-	"github.com/joho/godotenv"
-	"time"
-	"log"
 	"fmt"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/joho/godotenv"
+	"github.com/satori/go.uuid"
+	"log"
+	"os"
+	"time"
 )
 
 var db *gorm.DB // database
@@ -43,18 +43,18 @@ func init() {
 	migrateDatabase()
 }
 
-
 // Datebase migration
 func migrateDatabase() {
 	db := GetDB()
 
 	db.Debug().AutoMigrate(
-		&User{}, 
+		&User{},
 		&Company{},
 		&Role{},
 		&CompanyUser{},
 		&CompanyInvitationRequest{},
-	) 
+		&Post{},
+	)
 
 	// Migration scripts
 	db.Model(&Role{}).AddForeignKey("company_id", "companies(id)", "CASCADE", "RESTRICT")
@@ -65,11 +65,13 @@ func migrateDatabase() {
 	db.Model(&CompanyInvitationRequest{}).AddForeignKey("user_id", "users(id)", "SET NULL", "RESTRICT")
 	db.Model(&User{}).DropColumn("birthday_string")
 	db.Model(&User{}).DropColumn("token")
+	db.Model(&Post{}).AddForeignKey("company_id", "companies(id)", "CASCADE", "RESTRICT")
+	db.Model(&Post{}).AddForeignKey("author_id", "users(id)", "CASCADE", "RESTRICT")
 }
 
 func GetDB() *gorm.DB {
 	dbUri := fmt.Sprintf("postgres://%v@%v:%v/%v?sslmode=disable&password=%v", username, dbHost, dbPort, dbName, password)
-	
+
 	// Making connection to the database
 	db, err := gorm.Open("postgres", dbUri)
 	if err != nil {

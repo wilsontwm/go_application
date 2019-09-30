@@ -67,6 +67,10 @@ func main() {
 	apiUserRoutes := apiAuthenticatedRoutes.PathPrefix("/user").Subrouter()
 	apiUserRoutes.HandleFunc("/{id}", api.GetUserProfile).Methods("GET")
 
+	// Post routes
+	apiPostRoutes := apiCompanyRoutes.PathPrefix("/{companyId}/post").Subrouter()
+	apiPostRoutes.HandleFunc("/store", api.CreatePost).Methods("POST")
+
 	port := os.Getenv("port")
 	if port == "" {
 		port = "8000"
