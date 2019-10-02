@@ -70,6 +70,7 @@ func main() {
 	// Post routes
 	apiPostRoutes := apiCompanyRoutes.PathPrefix("/{companyId}/post").Subrouter()
 	apiPostRoutes.HandleFunc("/store", api.CreatePost).Methods("POST")
+	apiPostRoutes.HandleFunc("/{id}/update", api.EditPost).Methods("PATCH")
 
 	port := os.Getenv("port")
 	if port == "" {

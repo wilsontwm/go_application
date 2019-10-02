@@ -59,7 +59,7 @@ func (post *Post) CreatePost() map[string]interface{} {
 		return resp
 	}
 
-	if err := CreatePostTransaction(post); err != nil {
+	if err := CreateUpdatePostTransaction(post); err != nil {
 		resp = util.Message(false, http.StatusInternalServerError, err.Error(), errors)
 		return resp
 	}
@@ -70,8 +70,29 @@ func (post *Post) CreatePost() map[string]interface{} {
 	return resp
 }
 
+// Edit the post
+func (post *Post) EditPost() map[string]interface{} {
+	var errors []string
+	var resp map[string]interface{}
+
+	// Validate the input first
+	if resp, ok := post.Validate(); !ok {
+		return resp
+	}
+
+	if err := CreateUpdatePostTransaction(post); err != nil {
+		resp = util.Message(false, http.StatusInternalServerError, err.Error(), errors)
+		return resp
+	}
+
+	resp = util.Message(true, http.StatusOK, "You have successfully updated the post.", errors)
+	resp["data"] = post
+
+	return resp
+}
+
 // The database transaction to create post
-func CreatePostTransaction(post *Post) error {
+func CreateUpdatePostTransaction(post *Post) error {
 	db := GetDB()
 
 	defer db.Close()
@@ -88,7 +109,7 @@ func CreatePostTransaction(post *Post) error {
 		return err
 	}
 
-	if err := tx.Create(&post).Error; err != nil {
+	if err := tx.Save(&post).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -96,4 +117,18 @@ func CreatePostTransaction(post *Post) error {
 	// TODO: Add post picture & tags
 
 	return tx.Commit().Error
+}
+
+// Get the post based on ID
+func GetPostByID(id uuid.UUID) *Post {
+	post := &Post{}
+	db := GetDB()
+	db.Table("posts").Where("id = ?", id).First(post)
+	defer db.Close()
+
+	if post.ID == uuid.Nil {
+		return nil
+	}
+
+	return post
 }
