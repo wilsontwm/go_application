@@ -77,6 +77,36 @@ var CreatePost = func(w http.ResponseWriter, r *http.Request) {
 	util.Respond(w, resp)
 }
 
+// Get existing post
+var ShowPost = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	userId := r.Context().Value("user").(uuid.UUID)
+	// Get the ID of the company passed in via URL
+	vars := mux.Vars(r)
+	companyId, _ := uuid.FromString(vars["companyId"])
+	postId, _ := uuid.FromString(vars["id"])
+
+	// Authorization
+	if ok := policy.ShowPost(userId, postId, companyId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)
+		util.Respond(w, resp)
+		return
+	}
+
+	post := models.GetPostByID(postId)
+
+	if post == nil {
+		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)
+		util.Respond(w, resp)
+		return
+	}
+
+	resp := util.Message(true, http.StatusOK, "You have successfully retrieved the post.", errors)
+	resp["data"] = post
+
+	util.Respond(w, resp)
+}
+
 // Edit existing post
 var EditPost = func(w http.ResponseWriter, r *http.Request) {
 	var errors []string

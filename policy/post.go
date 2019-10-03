@@ -13,6 +13,20 @@ func CreatePost(userId, companyId uuid.UUID) bool {
 	return company != nil
 }
 
+// Check if the post belongs to the company
+func ShowPost(userId, postId, companyId uuid.UUID) bool {
+	db := models.GetDB()
+	defer db.Close()
+
+	// Check if the post belongs to the company
+	post := models.Post{}
+	db.Table("posts").
+		Where("id = ? AND company_id = ?", postId, companyId).
+		Scan(&post)
+
+	return post.ID != uuid.Nil
+}
+
 // Check if the user can update / delete post
 func UpdateDeletePost(userId, postId, companyId uuid.UUID) bool {
 	db := models.GetDB()
