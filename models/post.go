@@ -119,6 +119,20 @@ func CreateUpdatePostTransaction(post *Post) error {
 	return tx.Commit().Error
 }
 
+// Delete the post
+func (post *Post) DeletePost() map[string]interface{} {
+	var errors []string
+	var resp map[string]interface{}
+
+	db := GetDB()
+	db.Delete(&post)
+	defer db.Close()
+
+	resp = util.Message(true, http.StatusOK, "You have successfully deleted the post.", errors)
+
+	return resp
+}
+
 // Get the post based on ID
 func GetPostByID(id uuid.UUID) *Post {
 	post := &Post{}
