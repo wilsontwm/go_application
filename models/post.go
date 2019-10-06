@@ -2,8 +2,11 @@ package models
 
 import (
 	util "app/utils"
+	"fmt"
+	"github.com/jinzhu/gorm"
 	"github.com/satori/go.uuid"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -26,6 +29,58 @@ type Post struct {
 	Status      int       `gorm:"not null;default:0"`
 	ScheduledAt *time.Time
 	PublishedAt *time.Time
+}
+
+type PostOutput struct {
+	Post
+	Author            User `gorm:"foreignkey:AuthorID"`
+	StatusString      string
+	UpdatedAtString   string
+	ScheduledAtString string
+	PublishedAtString string
+}
+
+func IndexPost(companyID uuid.UUID, lastID uuid.UUID, lastPublished time.Time, limit int) map[string]interface{} {
+	var errors []string
+	var resp map[string]interface{}
+	fmt.Println(companyID, lastID, lastPublished, limit)
+	posts := []PostOutput{}
+	db := GetDB()
+	if lastID == uuid.Nil || lastPublished.IsZero() {
+		db.Preload("Author", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, name, email")
+		}).
+			Table("posts").
+			Select("posts.*, TO_CHAR(posts.updated_at, '"+util.DateTimeSQLFormat+"') as updated_at_string, TO_CHAR(posts.scheduled_at, '"+util.DateTimeSQLFormat+"') as scheduled_at_string, TO_CHAR(posts.published_at, '"+util.DateTimeSQLFormat+"') as published_at_string").
+			Where("company_id = ? AND published_at IS NOT NULL", companyID).
+			Order("published_at DESC, ID DESC").
+			Limit(limit).
+			Find(&posts)
+	} else {
+		db.Preload("Author", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, name, email")
+		}).
+			Table("posts").
+			Select("posts.*, TO_CHAR(posts.updated_at, '"+util.DateTimeSQLFormat+"') as updated_at_string, TO_CHAR(posts.scheduled_at, '"+util.DateTimeSQLFormat+"') as scheduled_at_string, TO_CHAR(posts.published_at, '"+util.DateTimeSQLFormat+"') as published_at_string").
+			Where("company_id = ? AND ( published_at < ? OR ( published_at = ? AND id < ? ) ) AND published_at IS NOT NULL", companyID, lastPublished, lastPublished, lastID).
+			Order("published_at DESC, ID DESC").
+			Limit(limit).
+			Find(&posts)
+	}
+
+	defer db.Close()
+
+	// Post processing of the posts
+	var result []PostOutput
+	for _, post := range posts {
+		post.StatusString = PostStatusArray[post.Status]
+		result = append(result, post)
+	}
+
+	resp = util.Message(true, http.StatusOK, "You have successfully retrieved "+strconv.Itoa(len(result))+" posts.", errors)
+	resp["data"] = result
+
+	return resp
 }
 
 func (post *Post) Validate() (map[string]interface{}, bool) {
@@ -134,15 +189,24 @@ func (post *Post) DeletePost() map[string]interface{} {
 }
 
 // Get the post based on ID
-func GetPostByID(id uuid.UUID) *Post {
-	post := &Post{}
+func GetPostByID(id uuid.UUID) *PostOutput {
+	post := PostOutput{}
 	db := GetDB()
-	db.Table("posts").Where("id = ?", id).First(post)
+	db.Preload("Author", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id, name, email")
+	}).
+		Table("posts").
+		Select("posts.*, TO_CHAR(posts.updated_at, '"+util.DateTimeSQLFormat+"') as updated_at_string, TO_CHAR(posts.scheduled_at, '"+util.DateTimeSQLFormat+"') as scheduled_at_string, TO_CHAR(posts.published_at, '"+util.DateTimeSQLFormat+"') as published_at_string").
+		Where("id = ?", id).
+		First(&post)
 	defer db.Close()
 
 	if post.ID == uuid.Nil {
 		return nil
 	}
 
-	return post
+	// Post processing of the posts
+	post.StatusString = PostStatusArray[post.Status]
+
+	return &post
 }

@@ -9,6 +9,8 @@ import (
 	"github.com/satori/go.uuid"
 	"gopkg.in/go-playground/validator.v9"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -17,6 +19,47 @@ type PostInput struct {
 	Content     string     `json:"content" validate:"required"`
 	Status      int        `json:"status" validate:"min=0,max=2"`
 	ScheduledAt *time.Time `json:"scheduled_at"`
+}
+
+// Get all post
+var IndexPost = func(w http.ResponseWriter, r *http.Request) {
+	var errors []string
+	userId := r.Context().Value("user").(uuid.UUID)
+	// Get the ID of the company passed in via URL
+	vars := mux.Vars(r)
+	companyId, _ := uuid.FromString(vars["companyId"])
+
+	// Authorization
+	if ok := policy.IndexPost(userId, companyId); !ok {
+		resp := util.Message(false, http.StatusForbidden, "You are not authorized to perform the action.", errors)
+		util.Respond(w, resp)
+		return
+	}
+
+	lastPublishedQuery, ok := r.URL.Query()["lastPublished"]
+	lastPublished := time.Time{}
+
+	if ok && len(lastPublishedQuery[0]) >= 1 {
+		r := strings.NewReplacer("Z", "+")
+		lastPublishedString := r.Replace(lastPublishedQuery[0])
+		lastPublished, _ = time.Parse(time.RFC3339, lastPublishedString)
+	}
+
+	lastIDQuery, ok := r.URL.Query()["lastID"]
+	lastID := uuid.Nil
+	if ok && len(lastIDQuery[0]) >= 1 {
+		lastID, _ = uuid.FromString(lastIDQuery[0])
+	}
+
+	limitQuery, ok := r.URL.Query()["limit"]
+	limit := 10
+	if ok && len(limitQuery[0]) >= 1 {
+		i, _ := strconv.ParseInt(limitQuery[0], 10, 32)
+		limit = int(i)
+	}
+
+	resp := models.IndexPost(companyId, lastID, lastPublished, limit)
+	util.Respond(w, resp)
 }
 
 // Create a new post
