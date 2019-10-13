@@ -193,7 +193,7 @@ func GetPostByID(id uuid.UUID) *PostOutput {
 	post := PostOutput{}
 	db := GetDB()
 	db.Preload("Author", func(db *gorm.DB) *gorm.DB {
-		return db.Select("id, name, email")
+		return db.Select("id, name, email, profile_picture")
 	}).
 		Table("posts").
 		Select("posts.*, TO_CHAR(posts.updated_at, '"+util.DateTimeSQLFormat+"') as updated_at_string, TO_CHAR(posts.scheduled_at, '"+util.DateTimeSQLFormat+"') as scheduled_at_string, TO_CHAR(posts.published_at, '"+util.DateTimeSQLFormat+"') as published_at_string").
