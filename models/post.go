@@ -2,7 +2,6 @@ package models
 
 import (
 	util "app/utils"
-	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/satori/go.uuid"
 	"net/http"
@@ -14,10 +13,17 @@ const PostStatusDraft = "Draft"
 const PostStatusScheduled = "Scheduled"
 const PostStatusPublished = "Published"
 
-var PostStatusArray = [...]string{
+var postStatus []PostStatus
+
+var PostStatusArray = []string{
 	PostStatusDraft,
 	PostStatusScheduled,
 	PostStatusPublished,
+}
+
+type PostStatus struct {
+	ID     int
+	Status string
 }
 
 type Post struct {
@@ -40,10 +46,20 @@ type PostOutput struct {
 	PublishedAtString string
 }
 
+// Create the post status
+func init() {
+	for i, stat := range PostStatusArray {
+		s := CreatePostStatus(i, stat)
+
+		postStatus = append(postStatus, *s)
+	}
+}
+
+// List the post
 func IndexPost(companyID uuid.UUID, lastID uuid.UUID, lastPublished time.Time, limit int) map[string]interface{} {
 	var errors []string
 	var resp map[string]interface{}
-	fmt.Println(companyID, lastID, lastPublished, limit)
+
 	posts := []PostOutput{}
 	db := GetDB()
 	if lastID == uuid.Nil || lastPublished.IsZero() {
@@ -83,6 +99,7 @@ func IndexPost(companyID uuid.UUID, lastID uuid.UUID, lastPublished time.Time, l
 	return resp
 }
 
+// Validate the input for create/edit post
 func (post *Post) Validate() (map[string]interface{}, bool) {
 	var errors []string
 	var resp map[string]interface{}
@@ -209,4 +226,12 @@ func GetPostByID(id uuid.UUID) *PostOutput {
 	post.StatusString = PostStatusArray[post.Status]
 
 	return &post
+}
+
+func CreatePostStatus(id int, status string) *PostStatus {
+	return &PostStatus{ID: id, Status: status}
+}
+
+func GetPostStatus() []PostStatus {
+	return postStatus
 }

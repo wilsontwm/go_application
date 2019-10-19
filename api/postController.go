@@ -137,6 +137,7 @@ var ShowPost = func(w http.ResponseWriter, r *http.Request) {
 	}
 
 	post := models.GetPostByID(postId)
+	ps := models.GetPostStatus()
 
 	if post == nil {
 		resp := util.Message(false, http.StatusUnprocessableEntity, "Something wrong has occured. Please try again.", errors)
@@ -146,6 +147,7 @@ var ShowPost = func(w http.ResponseWriter, r *http.Request) {
 
 	resp := util.Message(true, http.StatusOK, "You have successfully retrieved the post.", errors)
 	resp["data"] = post
+	resp["postStatus"] = ps
 
 	util.Respond(w, resp)
 }
