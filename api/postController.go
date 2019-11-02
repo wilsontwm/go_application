@@ -36,29 +36,62 @@ var IndexPost = func(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get the published datetime of the last post viewed
 	lastPublishedQuery, ok := r.URL.Query()["lastPublished"]
 	lastPublished := time.Time{}
 
 	if ok && len(lastPublishedQuery[0]) >= 1 {
-		r := strings.NewReplacer("Z", "+")
+		r := strings.NewReplacer(" ", "+")
 		lastPublishedString := r.Replace(lastPublishedQuery[0])
 		lastPublished, _ = time.Parse(time.RFC3339, lastPublishedString)
 	}
 
+	// Get the updated datetime of the last post viewed
+	lastUpdatedQuery, ok := r.URL.Query()["lastUpdated"]
+	lastUpdated := time.Time{}
+
+	if ok && len(lastUpdatedQuery[0]) >= 1 {
+		r := strings.NewReplacer(" ", "+")
+		lastUpdatedString := r.Replace(lastUpdatedQuery[0])
+		lastUpdated, _ = time.Parse(time.RFC3339, lastUpdatedString)
+	}
+
+	// Get the post ID of the last post viewed
 	lastIDQuery, ok := r.URL.Query()["lastID"]
 	lastID := uuid.Nil
 	if ok && len(lastIDQuery[0]) >= 1 {
 		lastID, _ = uuid.FromString(lastIDQuery[0])
 	}
 
+	// Get the limit of the posts in a batch
 	limitQuery, ok := r.URL.Query()["limit"]
-	limit := 10
+	limit := 10 // Default to be 10
 	if ok && len(limitQuery[0]) >= 1 {
-		i, _ := strconv.ParseInt(limitQuery[0], 10, 32)
-		limit = int(i)
+		if i, err := strconv.ParseInt(limitQuery[0], 10, 32); err == nil {
+			limit = int(i)
+		}
 	}
 
-	resp := models.IndexPost(companyId, lastID, lastPublished, limit)
+	// Get the author ID
+	authorIDQuery, ok := r.URL.Query()["author"]
+	authorID := uuid.Nil
+	if ok && len(authorIDQuery[0]) >= 1 {
+		authorID, _ = uuid.FromString(authorIDQuery[0])
+	}
+
+	// Get the status of the posts
+	postStatusQuery, ok := r.URL.Query()["status"]
+	postStatus := 2
+	if ok && len(postStatusQuery[0]) >= 1 {
+		if i, err := strconv.ParseInt(postStatusQuery[0], 10, 32); err == nil {
+			pt := int(i)
+			if pt >= 0 && pt < len(models.PostStatusArray) {
+				postStatus = pt
+			}
+		}
+	}
+
+	resp := models.IndexPost(companyId, lastID, lastPublished, lastUpdated, authorID, postStatus, limit)
 	util.Respond(w, resp)
 }
 

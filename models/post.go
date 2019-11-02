@@ -55,34 +55,54 @@ func init() {
 	}
 }
 
+// Get the post based on author
+func FromAuthor(authorID uuid.UUID) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if authorID == uuid.Nil {
+			return db
+		}
+		return db.Where("author_id = ?", authorID)
+	}
+}
+
+// Get the post based on last ID and last published
+func FromLastPublished(lastID uuid.UUID, lastPublished time.Time) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if lastID == uuid.Nil || lastPublished.IsZero() {
+			return db
+		}
+		return db.Where("( published_at < ? OR ( published_at = ? AND id < ? ) ) ", lastPublished, lastPublished, lastID)
+	}
+}
+
+// Get the post based on last ID and last updated
+func FromLastUpdated(lastID uuid.UUID, lastUpdated time.Time) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if lastID == uuid.Nil || lastUpdated.IsZero() {
+			return db
+		}
+		return db.Where("( updated_at < ? OR ( updated_at = ? AND id < ? ) ) ", lastUpdated, lastUpdated, lastID)
+	}
+}
+
 // List the post
-func IndexPost(companyID uuid.UUID, lastID uuid.UUID, lastPublished time.Time, limit int) map[string]interface{} {
+func IndexPost(companyID uuid.UUID, lastID uuid.UUID, lastPublished time.Time, lastUpdated time.Time, authorID uuid.UUID, postType int, limit int) map[string]interface{} {
 	var errors []string
 	var resp map[string]interface{}
 
 	posts := []PostOutput{}
+
 	db := GetDB()
-	if lastID == uuid.Nil || lastPublished.IsZero() {
-		db.Preload("Author", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id, name, email")
-		}).
-			Table("posts").
-			Select("posts.*, TO_CHAR(posts.updated_at, '"+util.DateTimeSQLFormat+"') as updated_at_string, TO_CHAR(posts.scheduled_at, '"+util.DateTimeSQLFormat+"') as scheduled_at_string, TO_CHAR(posts.published_at, '"+util.DateTimeSQLFormat+"') as published_at_string").
-			Where("company_id = ? AND published_at IS NOT NULL", companyID).
-			Order("published_at DESC, ID DESC").
-			Limit(limit).
-			Find(&posts)
-	} else {
-		db.Preload("Author", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id, name, email")
-		}).
-			Table("posts").
-			Select("posts.*, TO_CHAR(posts.updated_at, '"+util.DateTimeSQLFormat+"') as updated_at_string, TO_CHAR(posts.scheduled_at, '"+util.DateTimeSQLFormat+"') as scheduled_at_string, TO_CHAR(posts.published_at, '"+util.DateTimeSQLFormat+"') as published_at_string").
-			Where("company_id = ? AND ( published_at < ? OR ( published_at = ? AND id < ? ) ) AND published_at IS NOT NULL", companyID, lastPublished, lastPublished, lastID).
-			Order("published_at DESC, ID DESC").
-			Limit(limit).
-			Find(&posts)
-	}
+	db.Preload("Author", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id, name, email, profile_picture")
+	}).
+		Table("posts").
+		Select("posts.*, TO_CHAR(posts.updated_at, '"+util.DateTimeSQLFormat+"') as updated_at_string, TO_CHAR(posts.scheduled_at, '"+util.DateTimeSQLFormat+"') as scheduled_at_string, TO_CHAR(posts.published_at, '"+util.DateTimeSQLFormat+"') as published_at_string").
+		Scopes(FromAuthor(authorID), FromLastPublished(lastID, lastPublished), FromLastUpdated(lastID, lastUpdated)).
+		Where("company_id = ? AND status = ?", companyID, postType).
+		Order("published_at DESC, updated_at DESC").
+		Limit(limit).
+		Find(&posts)
 
 	defer db.Close()
 
